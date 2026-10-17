@@ -32,7 +32,8 @@
     "text": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 12000
+      "maxLength": 12000,
+      "description": "Input text. This is the outer bound: the server caps it at 8000 characters for every action except summarize, which allows 12000."
     },
     "settings": {
       "type": "object",
