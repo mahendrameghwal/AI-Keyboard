@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: aikeyboard-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aikeyboard
+      POSTGRES_PASSWORD: aikeyboard
+      POSTGRES_DB: aikeyboard
+    ports:
+      - "5432:5432"
+    volumes:
+      - aikeyboard-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aikeyboard -d aikeyboard"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  aikeyboard-pgdata:

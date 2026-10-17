@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-keyboard.local/schemas/ai-response.schema.json",
+  "title": "AIGenerateResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["requestId", "success", "provider", "model"],
+  "properties": {
+    "requestId": { "type": "string" },
+    "success": { "type": "boolean" },
+    "result": { "type": "string" },
+    "email": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject", "body"],
+      "properties": {
+        "subject": { "type": "string" },
+        "body": { "type": "string" }
+      }
+    },
+    "provider": { "type": "string", "enum": ["openai", "gemini", "anthropic"] },
+    "model": { "type": "string" },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "inputTokens": { "type": "integer", "minimum": 0 },
+        "outputTokens": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

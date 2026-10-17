@@ -1,0 +1,389 @@
+openapi: 3.1.0
+info:
+  title: AI Keyboard API
+  version: 0.1.0
+  description: >
+    Backend for the AI Keyboard app. Proxies AI provider requests, validates
+    input, normalizes provider errors, and provides optional accounts and
+    non-sensitive preference synchronization.
+    The provider API key is supplied per-request in the `X-Provider-Key`
+    header and is never logged or persisted.
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://api.example.com
+    description: Production (placeholder — replace with deployed domain)
+
+tags:
+  - name: Health
+  - name: AI
+  - name: Auth
+  - name: Users
+  - name: Sync
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Liveness check
+      security: []
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: ok }
+  /v1/health/ready:
+    get:
+      tags: [Health]
+      summary: Dependency readiness check
+      security: []
+      responses:
+        "200":
+          description: Ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+        "503":
+          description: Degraded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+
+  /v1/ai/generate:
+    post:
+      tags: [AI]
+      summary: Generate or transform text
+      description: >
+        Requires the `X-Provider-Key` header. No account required for BYOK usage.
+        Streaming is not supported in the MVP (`options.stream` must be false).
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ProviderKey"
+        - $ref: "#/components/parameters/RequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas/ai-request.schema.json"
+      responses:
+        "200":
+          description: Generation result
+          content:
+            application/json:
+              schema:
+                $ref: "./schemas/ai-response.schema.json"
+        "400": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "502": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+        "504": { $ref: "#/components/responses/Error" }
+
+  /v1/ai/providers:
+    get:
+      tags: [AI]
+      summary: List supported providers and models
+      security: []
+      responses:
+        "200":
+          description: Provider catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  providers:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Provider"
+
+  /v1/ai/providers/test:
+    post:
+      tags: [AI]
+      summary: Validate provider credentials
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ProviderKey"
+      responses:
+        "200":
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid: { type: boolean }
+                  message: { type: string }
+        "422": { $ref: "#/components/responses/Error" }
+
+  /v1/ai/usage:
+    get:
+      tags: [AI]
+      summary: Retrieve usage information (feature-flagged off in MVP)
+      security: []
+      responses:
+        "200":
+          description: Usage summary (or feature-disabled payload)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled: { type: boolean }
+                  events: { type: array, items: { type: object } }
+
+  /v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email, maxLength: 254 }
+                password: { type: string, minLength: 8, maxLength: 128 }
+                device: { $ref: "#/components/schemas/Device" }
+      responses:
+        "201": { description: Created }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email, maxLength: 254 }
+                password: { type: string, maxLength: 128 }
+                device: { $ref: "#/components/schemas/Device" }
+      responses:
+        "200": { description: Tokens issued }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /v1/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rotate session
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200": { description: Rotated }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "204": { description: Revoked }
+
+  /v1/users/me:
+    get:
+      tags: [Users]
+      summary: Retrieve profile
+      responses:
+        "200": { description: Profile }
+    delete:
+      tags: [Users]
+      summary: Request account deletion
+      responses:
+        "202": { description: Deletion scheduled }
+
+  /v1/users/me/sessions:
+    get:
+      tags: [Users]
+      summary: List active sessions/devices
+      responses:
+        "200": { description: Sessions }
+
+  /v1/users/me/sessions/{id}:
+    delete:
+      tags: [Users]
+      summary: Revoke a session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204": { description: Revoked }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /v1/sync/preferences:
+    get:
+      tags: [Sync]
+      summary: Retrieve synced preferences
+      responses:
+        "200":
+          description: Preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Preferences"
+    put:
+      tags: [Sync]
+      summary: Update synced preferences (optimistic concurrency)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/Preferences"
+                - type: object
+                  required: [version]
+      responses:
+        "200": { description: Updated }
+        "409": { $ref: "#/components/responses/Error" }
+
+components:
+  parameters:
+    ProviderKey:
+      name: X-Provider-Key
+      in: header
+      required: true
+      description: User-supplied provider API key. Never logged or persisted.
+      schema: { type: string, minLength: 1 }
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      schema: { type: string }
+  responses:
+    Error:
+      description: Canonical error envelope
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, requestId, retryable]
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - UNAUTHENTICATED
+                - FORBIDDEN
+                - NOT_FOUND
+                - INVALID_PROVIDER_KEY
+                - UNSUPPORTED_MODEL
+                - MODEL_DEPRECATED
+                - PROVIDER_CONTENT_BLOCKED
+                - EMPTY_RESPONSE
+                - PROVIDER_RATE_LIMITED
+                - PROVIDER_UNAVAILABLE
+                - PROVIDER_TIMEOUT
+                - RATE_LIMITED
+                - REQUEST_TOO_LARGE
+                - STREAM_NOT_SUPPORTED
+                - PREFERENCES_VERSION_CONFLICT
+                - SESSION_EXPIRED
+                - REFRESH_TOKEN_REUSED
+                - SESSION_REVOKED
+                - EMAIL_ALREADY_EXISTS
+                - INVALID_CREDENTIALS
+                - INTERNAL_ERROR
+            message: { type: string }
+            requestId: { type: string }
+            retryable: { type: boolean }
+            details: {}
+    Readiness:
+      type: object
+      properties:
+        status: { type: string, enum: [ready, degraded] }
+        dependencies:
+          type: object
+          properties:
+            database: { type: boolean }
+    Provider:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        models:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              status: { type: string, enum: [active, deprecated] }
+              capabilities: { type: array, items: { type: string } }
+        defaultModel: { type: string }
+        fallbackModel: { type: string }
+    Preferences:
+      type: object
+      required: [writingStyle, toneStrength, formality, defaultLength, language, version]
+      properties:
+        writingStyle:
+          type: string
+          enum: [professional, casual, polite, funny, friendly, romantic, confident, empathetic, neutral]
+        toneStrength: { type: string, enum: [soft, balanced, hard] }
+        formality: { type: string, enum: [formal, neutral, informal] }
+        defaultLength: { type: string, enum: [very_short, short, normal, detailed, elaborate] }
+        language: { type: string }
+        version: { type: integer, minimum: 1 }
+        updatedAt: { type: string, format: date-time }
+    Device:
+      type: object
+      required: [platform]
+      properties:
+        platform: { type: string, enum: [android, ios] }
+        name: { type: string, maxLength: 100 }
+    Session:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        current: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        lastUsedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        device:
+          nullable: true
+          type: object
+          properties:
+            platform: { type: string, enum: [android, ios] }
+            name: { type: string, nullable: true }

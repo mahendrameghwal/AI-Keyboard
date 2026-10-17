@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-keyboard.local/schemas/ai-request.schema.json",
+  "title": "AIGenerateRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["provider", "model", "action", "text"],
+  "properties": {
+    "provider": {
+      "type": "string",
+      "enum": ["openai", "gemini", "anthropic"]
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "fix",
+        "rewrite",
+        "shorten",
+        "expand",
+        "summarize",
+        "explain",
+        "continue",
+        "email",
+        "reply"
+      ]
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 12000
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tone": {
+          "type": "string",
+          "enum": [
+            "professional",
+            "casual",
+            "polite",
+            "funny",
+            "friendly",
+            "romantic",
+            "confident",
+            "empathetic",
+            "neutral"
+          ]
+        },
+        "toneStrength": { "type": "string", "enum": ["soft", "balanced", "hard"] },
+        "formality": { "type": "string", "enum": ["formal", "neutral", "informal"] },
+        "length": {
+          "type": "string",
+          "enum": ["very_short", "short", "normal", "detailed", "elaborate"]
+        },
+        "language": { "type": "string", "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$" }
+      }
+    },
+    "customInstructions": {
+      "type": "array",
+      "maxItems": 10,
+      "items": { "type": "string", "minLength": 1, "maxLength": 300 }
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stream": { "type": "boolean", "default": false }
+      }
+    }
+  }
+}

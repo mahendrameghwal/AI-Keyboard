@@ -1,0 +1,28 @@
+{
+  "name": "ai-keyboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI Keyboard — AI-powered writing assistant (monorepo: mobile app, backend API, shared contracts)",
+  "workspaces": [
+    "api",
+    "shared-contracts"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "api:dev": "npm run dev --workspace api",
+    "api:build": "npm run build --workspace api",
+    "api:test": "npm run test --workspace api",
+    "api:lint": "npm run lint --workspace api",
+    "api:typecheck": "npm run typecheck --workspace api",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
+  }
+}
