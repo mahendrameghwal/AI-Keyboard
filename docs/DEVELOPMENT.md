@@ -129,6 +129,22 @@ plain storage (or a draft in secure storage):
 preferences, clientWithKey }`. Screens use `useAppDeps()` and never import a native module, which is what
   makes them testable with fakes.
 
+### Browser preview (web target)
+
+`CI=1 npx expo start --web --port 8081` serves the same Expo Router routes in a browser, which is the only
+way to look at the screens on a machine with no emulator or attached phone. Two limits are inherent, not
+bugs to chase:
+
+- `react-native-web` and `react-dom` are **devDependencies**. The web target is a preview harness; it is not
+  a product surface and must stay out of the production dependency tree the CI audit reads.
+- The Providers screen cannot load here. `expo-secure-store` ships an empty `web.js`, and the API denies
+  every origin unless `CORS_ORIGINS` lists it — a browser on `localhost:8081` gets no
+  `Access-Control-Allow-Origin`, so the catalog request fails at the preflight. Both are correct for the
+  real client: React Native is not a browser and needs no CORS at all. Do not add a dev origin to a shared
+  config to make the preview prettier.
+
+Welcome, `/privacy` and `/keyboard-setup` render fully in the browser because they touch no native module.
+
 ### Mobile test harness
 
 `npm run test --workspace mobile` (4 suites, 22 tests). Two non-obvious requirements, both already wired:
