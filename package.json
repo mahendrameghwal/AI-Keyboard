@@ -5,6 +5,7 @@
   "description": "AI Keyboard — AI-powered writing assistant (monorepo: mobile app, backend API, shared contracts)",
   "workspaces": [
     "api",
+    "mobile",
     "shared-contracts"
   ],
   "engines": {
@@ -16,6 +17,9 @@
     "api:test": "npm run test --workspace api",
     "api:lint": "npm run lint --workspace api",
     "api:typecheck": "npm run typecheck --workspace api",
+    "mobile:dev": "npm run start --workspace mobile",
+    "mobile:typecheck": "npm run typecheck --workspace mobile",
+    "mobile:prebuild": "npm run prebuild --workspace mobile",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",

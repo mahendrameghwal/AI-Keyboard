@@ -14,7 +14,8 @@
 | D2 | iOS Full Access | **Required for AI.** Base typing works without it; AI toolbar disabled and onboarding explains why. |
 | D3 | Email verification / password reset | **Out of scope for MVP.** Registration trusts the email as-is; recovery is support-only. FR-17/§15.1 amended. |
 | D4 | Non-account usage | **No backend auth for BYOK.** `POST /v1/ai/generate` is callable with just a provider key; abuse controlled by IP-based rate limiting. Accounts are optional and only needed for sync. |
-| D5 | RN setup | **Bare React Native CLI + TypeScript.** |
+| D5 | RN setup | **Expo (CNG / prebuild) + TypeScript**, builds produced by **EAS Build**; supersedes the earlier "bare React Native CLI" choice (owner decision, 2026-10-18). Scope of Expo: the companion app shell and build/credential pipeline. The keyboard is **not** RN — `InputMethodService`/`UIInputViewController` stay native Kotlin/Swift, shipped as an Expo Module / native target (see D6). Cloud builds remove the local JDK/Android-SDK/Xcode requirement for *producing* artifacts; they do **not** remove the need for a device or emulator to *enable and test* an IME, so a physical Android device + `adb` (platform-tools) is the remaining local prerequisite for Phase 2/4/9 verification. |
+| D5.1 | iOS extension risk | Expo documents app extensions only as "add a target with your own config plugin" (`extra.eas.build.experimental.ios.appExtensions` is experimental and covers credentials, not keyboard templates). **Spike T2.0** must prove a custom-keyboard target survives `expo prebuild` + EAS before Phase 2 commits to iOS; fallback is a manually maintained Xcode project (requires macOS access) or deferring iOS. |
 | D6 | Result UI | **Native preview panel inside the keyboard** (Kotlin/Swift). No RN runtime inside the extension/IME. |
 | D7 | Sync scope | **Defaults only:** `writingStyle`, `toneStrength`, `formality`, `defaultLength`, `language`. Custom instructions are **local-only**. API keys / message history never sync. |
 | D8 | Streaming | **Not in MVP.** Server rejects `options.stream:true` with `STREAM_NOT_SUPPORTED`. |
@@ -31,8 +32,9 @@
 | Refresh token | Opaque, rotating, 7 d idle / 30 d absolute, token **families**, 60 s concurrency grace window | reuse → revoke family |
 | Rate limits | auth 5/min/IP; `providers/test` 10/h/IP; generate 30/h/IP (guest), 120/h/IP authed | `X-RateLimit-*` + `Retry-After` |
 | Argon2id | m=19456 KiB, t=2, p=1 (OWASP baseline) | tune in Phase 8 |
-| RN state | TanStack Query (server) + Zustand (local UI) | SRS lists only TanStack Query |
-| Secure storage | custom native module (Keystore / Keychain + App Group) | cross-process needs, not `react-native-keychain` |
+| RN state | TanStack Query (server) + Zustand (local UI) | SRS lists only TanStack Query; both are Expo-compatible |
+| Navigation | **Expo Router** (file routes in `src/app/`) | Owner decision 2026-10-18. SRS §25 names React Navigation; `expo-router` is built on it (its bundle pulls `react-navigation`), so the SRS line still holds underneath |
+| Secure storage | custom **Expo Module** (Keystore / Keychain + App Group) | cross-process needs, not `react-native-keychain`; same module is read by the IME/extension |
 | Autocorrect / offline dict | none in v1 — system default behavior only | FR-02 only requires offline typing |
 | i18n | UI English-only; `language` affects prompt language only | |
 | Tablet | phone-first; tablet only if free | |
@@ -97,8 +99,9 @@
 
 ```
 D:\AI Keybord\
-├── mobile/                    # RN bare app + native keyboards
-│   ├── src/                   # app/ screens/ features/ components/ services/ storage/ hooks/ types/ utils/
+├── mobile/                    # Expo (CNG) app + native keyboards as an Expo Module / native target
+│   ├── src/                   # app/ (Expo Router file routes) screens/ features/ components/ services/ storage/ hooks/ types/ utils/
+│   ├── modules/keyboard/      # Expo Module wrapping the native IME / extension
 │   ├── android/app/src/main/java/com/aikeyboard/{keyboard,bridge}/
 │   ├── ios/{AIKeyboardApp,AIKeyboardExtension,Shared}/
 │   └── __tests__/
@@ -145,13 +148,14 @@ Each phase: **Goal → Tasks → Deliverables → Dependencies → Acceptance Cr
 **Tasks**
 - **T1.1** `git init`, `.gitignore`, `.editorconfig`, `README.md`, commit convention.
 - **T1.2** Root `package.json` with npm workspaces (`mobile`, `api`, `shared-contracts`).
-- **T1.3** Bare RN + TS app (`com.aikeyboard`); Android/iOS projects generated.
+- **T1.3** Expo app (`create-expo-app`, TypeScript, `com.aikeyboard`) + `eas.json` build profiles; native
+  projects produced by `expo prebuild` and git-ignored. *(Amended from "bare RN CLI" per D5.)*
 - **T1.4** Express + TS scaffold matching §10.2 layout; strict `tsconfig`; `config/env.ts`; redaction-ready logger.
 - **T1.5** `docker-compose.yml` (Postgres 16) + `.env.example`.
 - **T1.6** Prisma init + first migration (minimal `users`/`sessions`).
 - **T1.7** `shared-contracts` package (OpenAPI + generated TS types).
 - **T1.8** Linters: ESLint/Prettier (TS), ktlint/detekt (Kotlin), SwiftLint (Swift).
-- **T1.9** Test harnesses: Vitest + Supertest (api); Jest + RN Testing Library (mobile).
+- **T1.9** Test harnesses: Vitest + Supertest (api); Jest (`jest-expo`) + RN Testing Library (mobile).
 - **T1.10** GitHub Actions: lint, typecheck, test, build, `gitleaks` secret scan.
 
 **Deliverables:** Both apps build/run; backend health OK; CI green.
@@ -162,6 +166,15 @@ Each phase: **Goal → Tasks → Deliverables → Dependencies → Acceptance Cr
 
 ### Phase 2 — Native Keyboards (typing only)
 **Goal:** Functional IMEs without AI.
+**Toolchain (D5):** the app shell is Expo; `android/` and `ios/` are generated by `expo prebuild` and the
+keyboard is committed as native code inside them (plus an Expo Module bridge). **APK/IPA artifacts come
+from EAS Build**, so no local JDK/Android SDK/Xcode is needed to produce them. Verification still needs a
+**physical Android device + `adb`** (install, enable the IME in system settings, type) — EAS cannot run a
+keyboard. iOS additionally depends on the T2.0 spike below.
+**Tasks — Toolchain**
+- **T2.0** Spike: prove a custom-keyboard iOS target survives `expo prebuild` + an EAS build (config
+  plugin or `expo-apple-targets`), and that an Android IME builds/signs through EAS. Output = a go/no-go
+  memo; if no-go, record the fallback (manual Xcode project on macOS, or defer iOS) before writing T2.8.
 **Tasks — Android**
 - **T2.1** `AIKeyboardService : InputMethodService`, `keyboard_method.xml`, manifest declarations.
 - **T2.2** `KeyboardView` + layout XML (alphabetic, numeric/symbol pages), shift/caps.
@@ -183,7 +196,9 @@ Each phase: **Goal → Tasks → Deliverables → Dependencies → Acceptance Cr
 - **T2.14** Verify offline typing and no-draft-loss on failure.
 
 **Deliverables:** Installable keyboards; offline typing.
-**Dependencies:** Phase 1; Apple Developer account + App Group capability; Android signing.
+**Dependencies:** Phase 1 (mobile workspace created as an Expo app); EAS project + build credentials; one
+physical Android device + `adb` for IME verification; Apple Developer account + App Group capability;
+Android signing; T2.0 spike outcome for the iOS target.
 **AC:** Keyboard enables/selects on both OS; typing works offline; backspace/space/enter/shift; insertion at cursor; orientation/lifecycle handled; no crash on OEM skins; draft never lost.
 
 ---
@@ -239,17 +254,25 @@ Each phase: **Goal → Tasks → Deliverables → Dependencies → Acceptance Cr
 
 ---
 
-### Phase 6 — Companion RN App
+### Phase 6 — Companion App (Expo)
 **Goal:** Full settings/onboarding experience.
 **Tasks**
 - **T6.1** Screens: Welcome, Keyboard Setup, Home, Provider Settings, Writing Assistant, Result Preview, Email Generator, Smart Replies, Account, Sync, Privacy, Usage (disabled) (§6.1).
-- **T6.2** React Navigation; TanStack Query; AsyncStorage prefs; secure-storage native module.
+- **T6.2** Navigation + state: **Expo Router** file routes under `mobile/src/app/` (owner decision
+  2026-10-18 — resolves the React Navigation vs Expo Router question in favour of Router, which is built on
+  React Navigation, so SRS §25 still holds underneath), TanStack Query, AsyncStorage prefs, secure-storage
+  Expo Module. The routes shell already exists (`_layout.tsx` + a placeholder index screen).
 - **T6.3** Provider config: add/test/replace/delete, masked key, model picker, connection status.
 - **T6.4** Activation-status check (Android real; iOS guidance-only) — never falsely claim enabled (FR-01).
 - **T6.5** Accessibility (NFR-09) + dark mode.
+- **T6.6** Network layer = `shared-contracts` `ApiClient` only (no hand-rolled fetch); base URL from app
+  config (`EXPO_PUBLIC_API_BASE_URL`) so no environment-specific string is hardcoded; provider key injected
+  per request via `getProviderKey()`.
+- **T6.7** EAS dev build installed on the physical device (`eas build --profile development`) so native
+  keyboard code runs without a local Android SDK; document `adb` install/enable steps in `docs/DEVELOPMENT.md`.
 
 **Deliverables:** Navigable app matching §6.1.
-**Dependencies:** Phases 3–5.
+**Dependencies:** Phases 3–5; EAS project (Phase 2 T2.0).
 **AC:** Onboarding enables keyboard without false claims; provider CRUD + test connection work; API-key billing disclosure shown; a11y labels present; no navigation crashes.
 
 ---
@@ -379,6 +402,9 @@ Draft preserved on error/cancel/timeout/focus-loss · insertion into correct fie
 | Provider/model churn | Med | Server catalog + deprecation status + fallback model + kill switch |
 | Sync conflict / offline races | Med | Versioned PUT + 409; capped prefs-only queue |
 | Timeline optimism (§21) | Med | Treat 8–9 wks as floor; native/store-review/compat extend; gate Phase 0 first |
+| iOS custom-keyboard target unsupported by Expo (D5/D5.1) | High | T2.0 spike before Phase 2 commits; fallback = manually maintained Xcode project (needs macOS) or defer iOS; never let `prebuild` silently drop the extension |
+| EAS is a metered external dependency (build minutes, credentials, outage) | Med | Keep `expo prebuild` + local Gradle/Xcode as a documented fallback; pin EAS CLI + Expo SDK; verify each release build provenance |
+| Verification coverage lost by removing the local emulator | Med | One physical Android device + `adb` is the Phase 2 baseline; GitHub Actions can provision JDK/Android SDK + emulator for CI-only checks |
 
 ## 8. MVP Definition of Done
 
@@ -392,6 +418,20 @@ All Phase 2–10 acceptance criteria met, plus §23: mobile runs both OS; keyboa
 - Streaming rejected in MVP (§13.4).
 - Usage tracking off by default (§14.2/§13.3).
 - Custom instructions local-only, not synced (FR-18).
+- **Mobile toolchain: Expo (CNG/prebuild) + EAS Build instead of bare React Native CLI** (D5, owner
+  decision 2026-10-18). The SRS fixes only "React Native + TypeScript" (§25) and already allows native
+  file locations to vary with the RN template (§11), so this supersedes the plan's own D5 wording rather
+  than the SRS. Consequences: build artifacts are produced in the cloud (no local JDK/Android SDK/Xcode
+  required to build), the keyboard ships as an Expo Module / native target rather than a hand-maintained
+  bare project, and **T2.0** must prove the iOS custom-keyboard target survives `prebuild` + EAS before
+  Phase 2 commits to iOS. Device/emulator testing of the IME is still local.
+- **Navigation: Expo Router instead of React Navigation** (§25 line "Navigation | React Navigation", owner
+  decision 2026-10-18). `expo-router` is a wrapper around React Navigation — it depends on it and its
+  bundle pulls it in — so the SRS stack line remains true underneath while routes are declared as files in
+  `mobile/src/app/` rather than imperatively in a navigator. This also satisfies `mobile/AGENTS.md`, the
+  template-shipped rulebook for agents working in this workspace. Consequence: screens use `<Stack>` +
+  `<Link>`/`router.push`, deep linking comes from `app.json#scheme` (`aikeyboard`), and any Phase 6
+  screen code must be written as a file route.
 
 ---
 
@@ -402,17 +442,17 @@ _Updated as work proceeds. Verification = commands run in CI/local (lint, typech
 | Phase | Status | Evidence / notes |
 |---|---|---|
 | 0 — Contract & Spec Freeze | Done | `shared-contracts/openapi.yaml`, `schemas/*`, `api/prisma/schema.prisma`; deviations in §9. |
-| 1 — Monorepo & Foundation | Done (partial) | npm workspaces `api` + `shared-contracts`; `.github/workflows/ci.yml` (now triggers on `main` **and** `master`); `api` scaffold; `/health` live; `docs/{ARCHITECTURE,API,SECURITY,DEVELOPMENT,PRIVACY}.md` + root `.env.example` authored. `mobile` workspace **deferred** — no JDK/Xcode. T1.7 TS-type generation still open (contracts ship spec + JSON schemas only). **Git has zero commits**, so T1.1's baseline and T1.10's "green CI on a trivial PR" are unproven until the first push. |
-| 2 — Native Keyboards | Blocked | Requires JDK + Android SDK and macOS/Xcode — absent in this environment. |
+| 1 — Monorepo & Foundation | Done (partial) | npm workspaces `api` + `shared-contracts`; `.github/workflows/ci.yml` (now triggers on `main` **and** `master`); `api` scaffold; `/health` live; `docs/{ARCHITECTURE,API,SECURITY,DEVELOPMENT,PRIVACY}.md` + root `.env.example` authored. T1.7 closed: `shared-contracts` now generates `src/types.ts` from `openapi.yaml` (`npm run gen -w shared-contracts`) and ships Zod request/response schemas + a framework-neutral typed `ApiClient`, with drift tests that import the API's own validators and error codes. T1.3 **closed 2026-10-18**: `mobile/` created with `create-expo-app` (blank-typescript, Expo SDK 58.0.14 / RN 0.88 / React 19.3), added to the root workspaces, `app.json` set to `com.aikeyboard` (iOS `bundleIdentifier` + Android `package`), `metro.config.js` wired for the monorepo (`watchFolders` = repo root + hoisted `nodeModulesPaths`), `eas.json` profiles committed, `mobile/.env.example` for `EXPO_PUBLIC_API_BASE_URL`, and `src/services/api.ts` instantiating the shared-contracts `ApiClient`. Verified: `npx expo-doctor` 20/20, root `npm run typecheck` clean across three workspaces, `npx expo export --platform android` bundles (628 modules, +13 when the typed client is imported — proves the TS-source workspace package transpiles through Metro), `npm run lint` + `npm run api:build` clean, **101 tests green** at that point (76 api + 23 contracts + 2 mobile; **121 now** — see the Phase 6 row). **Closed 2026-10-18 (T1.8/T1.9):** the api moved to ESLint 9 + flat config (`api/eslint.config.mjs`, `.eslintrc.cjs` deleted), which also unblocked `eslint-config-expo` for mobile; mobile now has `expo lint` (5 files, 0 problems) and a `jest-expo` suite (`__tests__/shared-contracts.test.ts`, 2 tests proving the typed `ApiClient` + Zod schemas run in the Expo runtime). Gotcha recorded in DEVELOPMENT.md: overriding `transformIgnorePatterns` breaks `expo-modules-core` ESM. **Git:** the owner created commits since the last audit — `main` now tracks `origin` (`github.com/mahendrameghwal/AI-Keyboard`) with two commits, and `api/.env` is **not** among the tracked files (verified with `git ls-files`). T1.10's "green CI on a trivial PR" is still unverified from this host: no `gh` CLI here, so the Actions run has to be read in the browser. **Navigation resolved 2026-10-18:** `expo-router` (~58.0.23) installed with `react-native-screens` / `react-native-safe-area-context` / `expo-linking` / `expo-constants`, `package.json#main` = `expo-router/entry`, `app.json` given `scheme: aikeyboard` + the `expo-router` plugin, and the entry screen moved to file routes (`src/app/_layout.tsx` `<Stack>` + `src/app/index.tsx`; `App.tsx`/`index.ts` deleted). Re-verified after the swap: `expo-doctor` 20/20, lint + typecheck clean, 101 tests green, `expo export --platform android` emits a 2.6 MB `entry-*.hbc`. |
+| 2 — Native Keyboards | Not started (unblocked, 2026-10-18) | No longer blocked on JDK/Android SDK/Xcode: builds move to EAS (D5). Remaining gates: the **T2.0** iOS-target spike, an **EAS project** (`eas init`/`eas login` — needs the owner's credentials), and **one physical Android device + `adb`** for IME enable/type verification, which cannot happen in the cloud. |
 | 3 — Backend AI Core | Done | Interface + registry + 3 adapters (Gemini key via header); `/v1/ai/{generate,providers,providers/test,usage}`; per-action prompts; `X-Provider-Key` intake; IP rate limiting + `Retry-After` (anon 30/h, **authenticated 120/h via `optionalAuthenticate`**, `providers/test` 10/h); streaming rejected. Model catalog is now a **server-maintained registry** (`services/ai/modelCatalog.ts`): built-in floor, `MODEL_CATALOG_PATH` JSON override, `MODEL_CATALOG_TTL_SECONDS` reload, `status: active\|deprecated`, `defaultModel`/`fallbackModel`, and `DISABLED_PROVIDERS` kill switch → `503 PROVIDER_UNAVAILABLE` (verified live: gemini hidden from `/v1/ai/providers`, its generate call returned 503). Adapters no longer declare models. Lint ✓ typecheck ✓ build ✓. |
 | 4 — Keyboard AI Integration | Not started | Depends on Phase 2. |
 | 5 — Writing Features | Not started | Depends on Phase 4. |
-| 6 — Companion RN App | Not started | Depends on Phases 3+5; needs RN toolchain. |
+| 6 — Companion App (Expo) | Started (device-free slice, 2026-10-18) | Deps installed per T6.2: `expo-router` file routes + `@tanstack/react-query` + `@react-native-async-storage/async-storage` + `expo-secure-store`. Storage seam exists (`src/storage/`): `SecretStore` (expo-secure-store) never shares a layer with `JsonStore` (AsyncStorage), `ProviderKeyStore` keeps only provider ids + the default selection in JSON and returns **masked** summaries (`••••` + last 4), `PreferencesRepository` round-trips the five synced fields through the contract `PreferencesSchema` and falls back to defaults on corrupt data. `src/app/` now has Welcome (with the T8.5 disclosure copy from `src/features/disclosure/copy.ts`), `providers` (catalog from `GET /v1/ai/providers`, test-before-save via a client that signs with the typed key, save+select, remove), `keyboard-setup` (instructions only — it deliberately claims no activation status, FR-01; the real check is T6.4) and `privacy`. Screens read injected deps through `DepsProvider`, so no screen imports the native modules. Still ahead: Account/Sync/Writing screens (they need Phases 4–5 features) and any visual/device confirmation, which needs the EAS dev build (T6.7). |
 | 7 — Accounts & Sync | Done (backend) | Auth (Argon2id), JWT access + rotating opaque refresh (family reuse + 60s grace), `/v1/auth/*` + `/v1/users/me/*` (sessions list/revoke), sync GET/PUT with `409`, auth limiter corrected to **5/min** (`RATE_LIMIT_AUTH_WINDOW_SECONDS`). Account deletion now actually executes: `workers/backgroundJobs.ts` runs hourly from `server.ts` — `pruneExpiredSessions()` (hard-delete past `expiresAt`) + `processDueJobs()` (purge, retry ≤5); the completed-status write was changed to `updateMany` because the job row cascades away with the user (P2025 crash otherwise). Migrations on hosted Prisma Postgres. Deferred: T7.4 device-side offline queue (mobile). |
-| 8 — Security & Privacy Hardening | In progress (backend complete) | T8.1 allowlisted access logging, T8.2 CORS deny-all + helmet + 64 KB body cap, T8.3 secrets inventory, T8.4 retention/purge loop live **and covered by `tests/integration/retention.test.ts`** (cascade, idempotency, due-vs-future, schedule→purge), T8.5 disclosure copy specified in `docs/SECURITY.md`/`docs/PRIVACY.md` (in-app wording pending mobile), T8.6 key-redaction asserted in unit + integration tests, T8.7 CI audit + CodeQL + gitleaks. New `docs/`: ARCHITECTURE, API, SECURITY, DEVELOPMENT, PRIVACY + root `.env.example`. Remaining: in-app disclosure screens, T8.6 device-side no-keystroke verification. |
-| 9 — Testing & QA | Partial (backend) | T9.1 backend suites now cover unit + integration + **contract** (`tests/contract/openapi.test.ts` pins the §1.1 inventory against the routed app, 16 ops both directions). 76 tests, 11 files: adapters, prompts, model catalog, request logger, health (mocked DB, no longer env-dependent), generate flow, CORS/redaction, auth+sync, retention/deletion, rate tiers. Remaining: T9.2–T9.7 (RN, IME instrumentation, iOS extension, E2E, k6 load, chaos, a11y) — all need the mobile toolchain. |
+| 8 — Security & Privacy Hardening | In progress (backend complete) | T8.1 allowlisted access logging, T8.2 CORS deny-all + helmet + 64 KB body cap, T8.3 secrets inventory, T8.4 retention/purge loop live **and covered by `tests/integration/retention.test.ts`** (cascade, idempotency, due-vs-future, schedule→purge), T8.5 disclosure copy specified in `docs/SECURITY.md`/`docs/PRIVACY.md` (in-app wording pending mobile), T8.6 key-redaction asserted in unit + integration tests, T8.7 CI audit + CodeQL + gitleaks. New `docs/`: ARCHITECTURE, API, SECURITY, DEVELOPMENT, PRIVACY + root `.env.example`. Remaining: in-app disclosure screens, T8.6 device-side no-keystroke verification. **Resolved 2026-10-18 (owner chose "scope to backend"):** adding the Expo workspace made the old blocking step `npm audit --omit=dev --audit-level=high` fail — 14 high advisories, all reachable only through `expo`/`react-native` toolchain packages (`@expo/cli`, `@expo/metro`, `metro`, `braces`, `node-forge`), 0 critical. CI now runs `scripts/audit-workspace.mjs --workspace api --fail-on high` as the gate (0 high/critical in the backend production tree, verified) plus a non-blocking full-tree report. Verified with `npm ls --omit=dev -w api --all --json` intersected against the advisory set. |
+| 9 — Testing & QA | Partial (backend) | T9.1 backend suites now cover unit + integration + **contract** (`tests/contract/openapi.test.ts` pins the §1.1 inventory against the routed app, 16 ops both directions). 76 tests, 11 files: adapters, prompts, model catalog, request logger, health (mocked DB, no longer env-dependent), generate flow, CORS/redaction, auth+sync, retention/deletion, rate tiers. Remaining: T9.2 RN tests (**advanced 2026-10-18**: `jest-expo` now runs 22 mobile tests — 2 contract-integration, 8 storage-seam, 6 provider-settings logic, 5 screen render incl. a masked-key leak guard; `mobile/test/helpers/` supplies memory `SecretStore`/`JsonStore` fakes and a fetch-level fake backend so screens exercise the real `ApiClient`; harness gotchas in DEVELOPMENT.md: AsyncStorage needs its official mock in `setupFiles`, and testing-library 14 `render`/`fireEvent` are **async**), T9.3–T9.7 (IME instrumentation, iOS extension, E2E, k6 load, chaos, a11y) — all need an EAS-built artifact plus a device/emulator (an emulator can be provisioned in GitHub Actions if no device is available). |
 | 10 — Deployment & Release | Not started | — |
 
-**Environment constraints:** Windows host; Node v22.14.0, npm 11.21.0, git 2.40.1. Docker, JDK/Android SDK, and Xcode are **absent**. `C:` is near-full; npm cache/temp redirected to `D:\npm-cache` and `D:\npm-temp` (set `npm_config_cache`, `TEMP`, `TMP` when running npm). Database: **hosted Prisma Postgres** (no local Postgres); connection string lives only in git-ignored `api/.env` — DB-backed suites load it themselves and skip when absent, and `vitest.config.ts` raises `testTimeout`/`hookTimeout` to 30 s for that latency. CI's `npm audit` gate is scoped to production deps (`--omit=dev`) since advisories are in dev-only Vitest/Vite tooling (upgrade to Vitest 5 tracked later).
+**Environment constraints:** Windows host; Node v22.14.0, npm 11.21.0, git 2.40.1. Docker, JDK/Android SDK, and Xcode are **absent**, but under D5 they are no longer needed to *build* the mobile app (EAS Build is remote). Still required and not available here: an **EAS account/project credential** (owner action) and a **physical Android device** for IME verification; iOS additionally needs macOS/Xcode if the T2.0 spike shows Expo cannot carry the extension target. `C:` is near-full; npm cache/temp redirected to `D:\npm-cache` and `D:\npm-temp` (set `npm_config_cache`, `TEMP`, `TMP` when running npm). Database: **hosted Prisma Postgres** (no local Postgres); connection string lives only in git-ignored `api/.env` — DB-backed suites load it themselves and skip when absent, and `vitest.config.ts` raises `testTimeout`/`hookTimeout` to 30 s for that latency. CI's audit gate is scoped to the **api workspace's** production tree (`scripts/audit-workspace.mjs`) because `expo` carries Metro/dev-server advisories that we cannot clear; advisories elsewhere print as a non-blocking report. Dev-only advisories are a second reason audits stay production-scoped (upgrade to Vitest 5 tracked later).
 
 **Single-instance constraints to clear before Phase 10:** rate-limit counters (`middleware/rateLimit.ts`) and the background-job loop (`workers/backgroundJobs.ts`) are both in-process. Running more than one replica would double-count limits and double-run purges — move counters to a shared store and jobs to a scheduled worker/queue, or keep exactly one replica.

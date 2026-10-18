@@ -7,15 +7,18 @@ Delivery source of truth: [`implementation-plan.md`](../implementation-plan.md).
 
 Three parts, one repository (plan D12):
 
-| Part                | Status          | What it does                                                                                                                                                                           |
-| ------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `api/`              | implemented     | Express + TypeScript + Prisma/Postgres. Proxies AI provider calls, validates input, normalizes errors, optional accounts + preference sync.                                            |
-| `shared-contracts/` | implemented     | Canonical OpenAPI 3.1 spec and JSON schemas. Backend owns the spec; mobile consumes it.                                                                                                |
-| `mobile/`           | **not created** | Bare React Native companion app plus native keyboards (Kotlin `InputMethodService`, Swift `UIInputViewController`). Blocked on a JDK/Android SDK and macOS/Xcode — see DEVELOPMENT.md. |
+| Part                | Status        | What it does                                                                                                                                                                                                                                                                                                  |
+| ------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api/`              | implemented   | Express + TypeScript + Prisma/Postgres. Proxies AI provider calls, validates input, normalizes errors, optional accounts + preference sync.                                                                                                                                                                   |
+| `shared-contracts/` | implemented   | Canonical OpenAPI 3.1 spec and JSON schemas. Backend owns the spec; mobile consumes it.                                                                                                                                                                                                                       |
+| `mobile/`           | Expo scaffold | Expo SDK 58 companion app (`com.aikeyboard`) plus the native keyboards it will carry (Kotlin `InputMethodService`, Swift `UIInputViewController`) as an Expo Module / generated native target. Builds go through EAS (plan D5), so no local JDK/Xcode is required; IME **verification** still needs a device. |
 
 There is deliberately **no RN runtime inside the keyboard extension/IME**. The keyboards are native UI
 that talk HTTP directly to the API and render results in a native preview panel (plan D6), which keeps
 them inside the iOS extension memory budget (~30–50 MB).
+
+The `shared-contracts` `ApiClient` is TypeScript, so it serves the Expo app only; the keyboards implement
+the same OpenAPI contract in Kotlin and Swift. The contract is shared, the code is not.
 
 ## Request path (AI)
 

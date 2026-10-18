@@ -37,6 +37,34 @@ jobs:
       - run: npm run api:test
       - run: npm run api:build
 
+  mobile:
+    name: Mobile (lint, typecheck, jest-expo)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck --workspace mobile
+      - run: npm run lint --workspace mobile
+      # js-only suites: no emulator or device is involved. IME instrumentation is plan T9.3.
+      - run: npm run test --workspace mobile
+
+  contracts:
+    name: Shared contracts (typecheck, drift tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck --workspace shared-contracts
+      - run: npm run test --workspace shared-contracts
+
   secret-scan:
     name: Secret scan (gitleaks)
     runs-on: ubuntu-latest
@@ -58,8 +86,15 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Fail on high/critical advisories (production deps)
-        run: npm audit --omit=dev --audit-level=high
+      # Blocking: the deployed backend's production tree. `npm audit` repo-wide is not used
+      # because `expo` lists its Metro/dev-server toolchain under "dependencies", so those
+      # advisories can never be cleared from our side and would mask backend regressions.
+      - name: Fail on high/critical advisories in the api production tree
+        run: node scripts/audit-workspace.mjs --workspace api --fail-on high
+      # Informational: everything else, including the mobile toolchain. Reviewed manually.
+      - name: Advisory report (full production tree)
+        continue-on-error: true
+        run: node scripts/audit-workspace.mjs --report-only
 
   codeql:
     name: CodeQL SAST

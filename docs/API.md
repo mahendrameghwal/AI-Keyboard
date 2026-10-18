@@ -4,6 +4,12 @@ Canonical machine-readable contract: [`shared-contracts/openapi.yaml`](../shared
 The endpoint inventory below is enforced by `api/tests/contract/openapi.test.ts`, which fails if the
 spec and the routed Express app drift apart.
 
+Typed consumers live in [`shared-contracts`](../shared-contracts): `src/types.ts` is generated from
+the spec (`npm run gen -w shared-contracts`), `src/schemas.ts` mirrors the request/response bodies, and
+`src/client.ts` exposes a `ApiClient` that sets `X-Provider-Key`, `Authorization`, and `X-Request-Id`
+and normalizes failures to [`ApiRequestError`](../shared-contracts/src/client.ts). The mobile app must
+use that client rather than hand-rolling fetch.
+
 ## Conventions
 
 - Base URL: `https://<host>` — all routes are absolute (`/v1/...`), no mount prefix.

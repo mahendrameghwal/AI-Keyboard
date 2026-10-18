@@ -13,6 +13,9 @@ build/
 .env.*
 !.env.example
 
+#agents
+.agents/
+
 # Logs
 logs/
 *.log
