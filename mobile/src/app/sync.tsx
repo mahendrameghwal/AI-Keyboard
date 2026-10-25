@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import { Screen, ScreenTitle } from '../components/Screen';
-import { AppleButton, AppleCard, SegmentedPill } from '../components/ui';
+import { Button, Card, SegmentedPill } from '../components/ui';
 import { useAuth } from '../features/auth/AuthContext';
 import { SyncService } from '../features/sync/syncService';
 import { useAppDeps } from '../services/deps';
@@ -115,7 +115,7 @@ export default function SyncScreen() {
       </Text>
 
       {/* Sync Status Inset */}
-      <AppleCard surface="pearl" padding="sm" style={styles.syncCard}>
+      <Card surface="pearl" padding="sm" style={styles.syncCard}>
         <View style={styles.syncInfo}>
           <View style={styles.syncStatusRow}>
             <View
@@ -132,7 +132,7 @@ export default function SyncScreen() {
         </View>
 
         {user ? (
-          <AppleButton
+          <Button
             testID="sync-now-button"
             onPress={onManualSync}
             disabled={saving}
@@ -141,9 +141,9 @@ export default function SyncScreen() {
             variant="secondary"
           >
             Sync Now
-          </AppleButton>
+          </Button>
         ) : null}
-      </AppleCard>
+      </Card>
 
       {statusMessage ? (
         <View style={styles.messageBanner}>

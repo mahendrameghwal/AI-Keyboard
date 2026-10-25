@@ -8,12 +8,12 @@ import {
 } from 'react-native';
 import { ResultPreview } from '../components/ResultPreview';
 import { Screen, ScreenTitle } from '../components/Screen';
-import { AppleButton, AppleCard, AppleInput, SegmentedPill } from '../components/ui';
+import { Button, Card, Input, SegmentedPill } from '../components/ui';
 import { useAppDeps } from '../services/deps';
 import { colors, radii, spacing, typography } from '../theme';
 import type { Action, GenerateResponseOutput, Provider, Tone } from '@ai-keyboard/shared-contracts/schemas';
 
-const ACTIONS: Array<{ id: Action; label: string }> = [
+const ACTIONS: { id: Action; label: string }[] = [
   { id: 'fix', label: 'Fix Grammar' },
   { id: 'rewrite', label: 'Rewrite' },
   { id: 'shorten', label: 'Shorten' },
@@ -23,7 +23,7 @@ const ACTIONS: Array<{ id: Action; label: string }> = [
   { id: 'continue', label: 'Continue' },
 ];
 
-const TONE_OPTIONS: Array<{ id: Tone; label: string }> = [
+const TONE_OPTIONS: { id: Tone; label: string }[] = [
   { id: 'professional', label: 'Professional' },
   { id: 'casual', label: 'Casual' },
   { id: 'polite', label: 'Polite' },
@@ -97,12 +97,12 @@ export default function WritingAssistantScreen() {
           </Text>
         </View>
       ) : (
-        <AppleCard surface="pearl" style={styles.warningCard}>
+        <Card surface="pearl" style={styles.warningCard}>
           <Text style={styles.warningTitle}>No AI Provider Configured</Text>
           <Text style={styles.warningText}>
             Add your API key in Provider Settings to enable writing assistance.
           </Text>
-        </AppleCard>
+        </Card>
       )}
 
       {error ? (
@@ -138,8 +138,8 @@ export default function WritingAssistantScreen() {
         {/* Input Text */}
         <View style={styles.section}>
           <Text style={styles.label}>Your Text</Text>
-          <AppleCard surface="pearl" padding="sm" style={styles.inputCard}>
-            <AppleInput
+          <Card surface="pearl" padding="sm" style={styles.inputCard}>
+            <Input
               testID="assistant-input-text"
               value={text}
               onChangeText={setText}
@@ -148,10 +148,10 @@ export default function WritingAssistantScreen() {
               numberOfLines={4}
               style={styles.textArea}
             />
-          </AppleCard>
+          </Card>
         </View>
 
-        <AppleButton
+        <Button
           testID="assistant-generate-button"
           onPress={onGenerate}
           disabled={isGenerating || !defaultTarget}
@@ -159,7 +159,7 @@ export default function WritingAssistantScreen() {
           variant="primary"
         >
           Generate with AI
-        </AppleButton>
+        </Button>
 
         {result ? (
           <ResultPreview

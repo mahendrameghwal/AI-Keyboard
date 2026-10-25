@@ -2,7 +2,7 @@ import type { PropsWithChildren } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { colors, radii, spacing } from '../../theme';
 
-export interface AppleCardProps extends PropsWithChildren {
+export interface CardProps extends PropsWithChildren {
   surface?: 'white' | 'parchment' | 'pearl' | 'dark1';
   bordered?: boolean;
   padding?: 'none' | 'sm' | 'md' | 'lg';
@@ -10,14 +10,14 @@ export interface AppleCardProps extends PropsWithChildren {
   testID?: string;
 }
 
-export function AppleCard({
+export function Card({
   children,
   surface = 'white',
   bordered = true,
   padding = 'lg',
   style,
   testID,
-}: AppleCardProps): React.JSX.Element {
+}: CardProps): React.JSX.Element {
   const getBackgroundColor = () => {
     switch (surface) {
       case 'parchment':
@@ -71,3 +71,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 });
+
+// Backward-compatible alias
+export const AppleCard = Card;
+export type AppleCardProps = CardProps;

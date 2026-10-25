@@ -57,5 +57,8 @@ export async function purgeUser(userId: string): Promise<PurgeResult> {
       jobsDeleted: jobs,
       usageEventsOrphaned: orphaned,
     };
+  }, {
+    timeout: 20000,
+    maxWait: 10000,
   });
 }

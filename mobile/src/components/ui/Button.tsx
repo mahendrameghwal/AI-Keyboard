@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  StyleSheet,
   Text,
   TouchableOpacity,
   type GestureResponderEvent,
@@ -11,7 +10,7 @@ import {
 } from 'react-native';
 import { colors, radii, spacing, typography } from '../../theme';
 
-export interface AppleButtonProps {
+export interface ButtonProps {
   children: string;
   onPress?: (event: GestureResponderEvent) => void;
   variant?: 'primary' | 'secondary' | 'ghost' | 'destructive' | 'dark';
@@ -23,7 +22,7 @@ export interface AppleButtonProps {
   textStyle?: StyleProp<TextStyle>;
 }
 
-export function AppleButton({
+export function Button({
   children,
   onPress,
   variant = 'primary',
@@ -33,7 +32,7 @@ export function AppleButton({
   testID,
   style,
   textStyle,
-}: AppleButtonProps): React.JSX.Element {
+}: ButtonProps): React.JSX.Element {
   const [isPressed, setIsPressed] = useState(false);
 
   const getContainerStyle = (): ViewStyle => {
@@ -120,3 +119,7 @@ export function AppleButton({
     </TouchableOpacity>
   );
 }
+
+// Backward-compatible alias
+export const AppleButton = Button;
+export type AppleButtonProps = ButtonProps;

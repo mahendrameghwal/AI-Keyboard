@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { ResultPreview } from '../components/ResultPreview';
 import { Screen, ScreenTitle } from '../components/Screen';
-import { AppleButton, AppleCard, AppleInput } from '../components/ui';
+import { Button, Card, Input } from '../components/ui';
 import { useAppDeps } from '../services/deps';
 import { colors, radii, spacing, typography } from '../theme';
 import type { GenerateResponseOutput, Provider } from '@ai-keyboard/shared-contracts/schemas';
@@ -80,7 +80,7 @@ export default function EmailGeneratorScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.section}>
           <Text style={styles.label}>Recipient / Context (Optional)</Text>
-          <AppleInput
+          <Input
             testID="email-recipient"
             value={recipientContext}
             onChangeText={setRecipientContext}
@@ -90,8 +90,8 @@ export default function EmailGeneratorScreen() {
 
         <View style={styles.section}>
           <Text style={styles.label}>Email Points & Intent</Text>
-          <AppleCard surface="pearl" padding="sm" style={styles.inputCard}>
-            <AppleInput
+          <Card surface="pearl" padding="sm" style={styles.inputCard}>
+            <Input
               testID="email-notes"
               value={notes}
               onChangeText={setNotes}
@@ -100,10 +100,10 @@ export default function EmailGeneratorScreen() {
               numberOfLines={4}
               style={styles.textArea}
             />
-          </AppleCard>
+          </Card>
         </View>
 
-        <AppleButton
+        <Button
           testID="generate-email-button"
           onPress={onGenerateEmail}
           disabled={isGenerating || !defaultTarget}
@@ -111,7 +111,7 @@ export default function EmailGeneratorScreen() {
           variant="primary"
         >
           Draft Email
-        </AppleButton>
+        </Button>
 
         {result ? (
           <ResultPreview

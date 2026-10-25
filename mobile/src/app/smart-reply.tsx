@@ -8,12 +8,12 @@ import {
 } from 'react-native';
 import { ResultPreview } from '../components/ResultPreview';
 import { Screen, ScreenTitle } from '../components/Screen';
-import { AppleButton, AppleCard, AppleInput, SegmentedPill } from '../components/ui';
+import { Button, Card, Input, SegmentedPill } from '../components/ui';
 import { useAppDeps } from '../services/deps';
 import { colors, radii, spacing, typography } from '../theme';
 import type { GenerateResponseOutput, Provider, Tone } from '@ai-keyboard/shared-contracts/schemas';
 
-const REPLY_TONES: Array<{ id: Tone; label: string }> = [
+const REPLY_TONES: { id: Tone; label: string }[] = [
   { id: 'polite', label: 'Polite' },
   { id: 'professional', label: 'Professional' },
   { id: 'casual', label: 'Casual' },
@@ -92,8 +92,8 @@ export default function SmartReplyScreen() {
 
         <View style={styles.section}>
           <Text style={styles.label}>Received Message</Text>
-          <AppleCard surface="pearl" padding="sm" style={styles.inputCard}>
-            <AppleInput
+          <Card surface="pearl" padding="sm" style={styles.inputCard}>
+            <Input
               testID="received-message-input"
               value={receivedMessage}
               onChangeText={setReceivedMessage}
@@ -102,10 +102,10 @@ export default function SmartReplyScreen() {
               numberOfLines={4}
               style={styles.textArea}
             />
-          </AppleCard>
+          </Card>
         </View>
 
-        <AppleButton
+        <Button
           testID="generate-reply-button"
           onPress={onGenerateReply}
           disabled={isGenerating || !defaultTarget}
@@ -113,7 +113,7 @@ export default function SmartReplyScreen() {
           variant="primary"
         >
           Suggest Reply
-        </AppleButton>
+        </Button>
 
         {result ? (
           <ResultPreview

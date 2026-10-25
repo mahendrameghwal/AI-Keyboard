@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BackendHealthBanner } from '../components/BackendHealthBanner';
 import { InfoList } from '../components/InfoList';
 import { Screen, ScreenTitle } from '../components/Screen';
-import { AppleCard } from '../components/ui/AppleCard';
+import { Card } from '../components/ui';
 import { useAuth } from '../features/auth/AuthContext';
 import { DISCLOSURE } from '../features/disclosure/copy';
 import { API_BASE_URL } from '../services/api';
@@ -41,33 +41,33 @@ export default function HomeScreen() {
           <Text style={styles.sectionHeader}>AI Writing Tools</Text>
 
           <Link href="/assistant" asChild>
-            <AppleCard surface="white" style={styles.featureCard}>
+            <Card surface="white" style={styles.featureCard}>
               <Text style={styles.cardEyebrow}>Writing Assistant</Text>
               <Text style={styles.cardTitle}>Rewrite, Fix & Expand</Text>
               <Text style={styles.cardDesc}>
                 Fix grammar, refine tone from diplomatic to assertive, or summarize text with one tap.
               </Text>
-            </AppleCard>
+            </Card>
           </Link>
 
           <Link href="/email" asChild>
-            <AppleCard surface="white" style={styles.featureCard}>
+            <Card surface="white" style={styles.featureCard}>
               <Text style={styles.cardEyebrow}>Email Generator</Text>
               <Text style={styles.cardTitle}>Full Email Drafting</Text>
               <Text style={styles.cardDesc}>
                 Turn short bullet points into structured emails with dedicated subject lines.
               </Text>
-            </AppleCard>
+            </Card>
           </Link>
 
           <Link href="/smart-reply" asChild>
-            <AppleCard surface="white" style={styles.featureCard}>
+            <Card surface="white" style={styles.featureCard}>
               <Text style={styles.cardEyebrow}>Smart Replies</Text>
               <Text style={styles.cardTitle}>Context-Aware Responses</Text>
               <Text style={styles.cardDesc}>
                 Paste messages to generate polite, professional, or casual replies instantly.
               </Text>
-            </AppleCard>
+            </Card>
           </Link>
         </View>
 
@@ -78,43 +78,43 @@ export default function HomeScreen() {
 
           <View style={styles.darkCardGrid}>
             <Link href="/providers" asChild>
-              <AppleCard surface="dark1" bordered={false} style={styles.darkCard}>
+              <Card surface="dark1" bordered={false} style={styles.darkCard}>
                 <Text style={styles.darkLinkText}>
                   AI Provider Settings →
                 </Text>
                 <Text style={styles.darkCardDesc}>
                   Configure your OpenAI, Gemini, or Anthropic API key with zero server storage.
                 </Text>
-              </AppleCard>
+              </Card>
             </Link>
 
             <Link href="/sync" asChild>
-              <AppleCard surface="dark1" bordered={false} style={styles.darkCard}>
+              <Card surface="dark1" bordered={false} style={styles.darkCard}>
                 <Text style={styles.darkLinkText}>Writing Preferences & Sync →</Text>
                 <Text style={styles.darkCardDesc}>
                   Set default tone and length across all your phones and tablets.
                 </Text>
-              </AppleCard>
+              </Card>
             </Link>
 
             <Link href="/account" asChild>
-              <AppleCard surface="dark1" bordered={false} style={styles.darkCard}>
+              <Card surface="dark1" bordered={false} style={styles.darkCard}>
                 <Text style={styles.darkLinkText}>Account & Device Sessions →</Text>
                 <Text style={styles.darkCardDesc}>
                   {user ? 'Manage active sessions or sign out.' : 'Optional sign-in for cross-device sync.'}
                 </Text>
-              </AppleCard>
+              </Card>
             </Link>
 
             <Link href="/keyboard-setup" asChild>
-              <AppleCard surface="dark1" bordered={false} style={styles.darkCard}>
+              <Card surface="dark1" bordered={false} style={styles.darkCard}>
                 <Text style={styles.darkLinkText}>
                   Keyboard Setup Guide →
                 </Text>
                 <Text style={styles.darkCardDesc}>
                   Instructions to activate and select AI Keyboard in system settings.
                 </Text>
-              </AppleCard>
+              </Card>
             </Link>
           </View>
         </View>

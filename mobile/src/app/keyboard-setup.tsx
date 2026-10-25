@@ -1,7 +1,7 @@
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { InfoList } from '../components/InfoList';
 import { Screen, ScreenTitle } from '../components/Screen';
-import { AppleCard } from '../components/ui';
+import { Card } from '../components/ui';
 import { KEYBOARD_SETUP } from '../features/disclosure/copy';
 import { colors, spacing, typography } from '../theme';
 
@@ -22,7 +22,7 @@ export default function KeyboardSetup() {
         Follow these steps to activate AI Keyboard in your device system settings.
       </Text>
 
-      <AppleCard surface="pearl" padding="md" style={styles.card}>
+      <Card surface="pearl" padding="md" style={styles.card}>
         <InfoList items={steps} testID="keyboard-setup-steps" />
         <View style={styles.noteBox}>
           <Text style={styles.noteText}>
@@ -30,7 +30,7 @@ export default function KeyboardSetup() {
             instructions for system keyboard settings.
           </Text>
         </View>
-      </AppleCard>
+      </Card>
     </Screen>
   );
 }

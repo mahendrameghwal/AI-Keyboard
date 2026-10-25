@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors, radii, spacing, typography } from '../theme';
-import { AppleButton } from './ui/AppleButton';
+import { Button } from './ui';
 
 interface EmailResult {
   subject: string;
@@ -86,18 +86,18 @@ export function ResultPreview({
 
       <View style={styles.actions}>
         {!email && result ? (
-          <AppleButton
+          <Button
             testID="copy-result-button"
             onPress={() => handleCopy(result, 'Text')}
             variant="primary"
             style={{ flex: 1 }}
           >
             Copy Text
-          </AppleButton>
+          </Button>
         ) : null}
 
         {onRegenerate ? (
-          <AppleButton
+          <Button
             testID="regenerate-button"
             onPress={onRegenerate}
             variant="secondary"
@@ -105,7 +105,7 @@ export function ResultPreview({
             style={{ flex: 1 }}
           >
             Regenerate
-          </AppleButton>
+          </Button>
         ) : null}
       </View>
     </View>

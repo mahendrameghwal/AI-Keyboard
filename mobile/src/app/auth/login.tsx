@@ -2,7 +2,7 @@ import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Screen, ScreenTitle } from '../../components/Screen';
-import { AppleButton, AppleCard, AppleInput } from '../../components/ui';
+import { Button, Card, Input } from '../../components/ui';
 import { useAuth } from '../../features/auth/AuthContext';
 import { colors, radii, spacing, typography } from '../../theme';
 
@@ -46,10 +46,10 @@ export default function LoginScreen() {
         </View>
       ) : null}
 
-      <AppleCard surface="white" padding="md" style={styles.formCard}>
+      <Card surface="white" padding="md" style={styles.formCard}>
         <View style={styles.field}>
           <Text style={styles.label}>Email Address</Text>
-          <AppleInput
+          <Input
             testID="login-email"
             value={email}
             onChangeText={setEmail}
@@ -62,7 +62,7 @@ export default function LoginScreen() {
 
         <View style={styles.field}>
           <Text style={styles.label}>Password</Text>
-          <AppleInput
+          <Input
             testID="login-password"
             value={password}
             onChangeText={setPassword}
@@ -72,7 +72,7 @@ export default function LoginScreen() {
           />
         </View>
 
-        <AppleButton
+        <Button
           testID="login-submit"
           onPress={onSubmit}
           disabled={isSubmitting}
@@ -81,15 +81,15 @@ export default function LoginScreen() {
           style={styles.submitBtn}
         >
           Sign In
-        </AppleButton>
+        </Button>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
+          <Text style={styles.footerText}>{"Don't have an account? "}</Text>
           <Link href="/auth/register" style={styles.link}>
             Create one
           </Link>
         </View>
-      </AppleCard>
+      </Card>
     </Screen>
   );
 }

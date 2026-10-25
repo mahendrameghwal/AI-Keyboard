@@ -8,16 +8,16 @@ import {
 } from 'react-native';
 import { colors, radii, spacing, typography } from '../../theme';
 
-export interface AppleInputProps extends TextInputProps {
+export interface InputProps extends TextInputProps {
   style?: StyleProp<TextStyle>;
 }
 
-export function AppleInput({
+export function Input({
   style,
   onFocus,
   onBlur,
   ...props
-}: AppleInputProps): React.JSX.Element {
+}: InputProps): React.JSX.Element {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
@@ -54,3 +54,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
 });
+
+// Backward-compatible alias
+export const AppleInput = Input;
+export type AppleInputProps = InputProps;

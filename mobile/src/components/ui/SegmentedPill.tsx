@@ -7,7 +7,7 @@ export interface PillOption<T extends string> {
 }
 
 export interface SegmentedPillProps<T extends string> {
-  options: ReadonlyArray<PillOption<T>>;
+  options: readonly PillOption<T>[];
   selectedId: T;
   onSelect: (id: T) => void;
   scrollable?: boolean;

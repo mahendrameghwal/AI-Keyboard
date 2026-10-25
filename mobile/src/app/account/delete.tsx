@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Screen, ScreenTitle } from '../../components/Screen';
-import { AppleButton, AppleCard } from '../../components/ui';
+import { Button, Card } from '../../components/ui';
 import { useAuth } from '../../features/auth/AuthContext';
 import { useAppDeps } from '../../services/deps';
 import { colors, radii, spacing, typography } from '../../theme';
@@ -32,7 +32,7 @@ export default function DeleteAccountScreen() {
     <Screen>
       <ScreenTitle testID="delete-account-title">Delete Account</ScreenTitle>
 
-      <AppleCard surface="pearl" padding="md" style={styles.warningCard}>
+      <Card surface="pearl" padding="md" style={styles.warningCard}>
         <Text style={styles.warningTitle}>Permanent Action</Text>
         <Text style={styles.warningText}>
           Requesting deletion will immediately sign you out of all devices and schedule your account
@@ -41,7 +41,7 @@ export default function DeleteAccountScreen() {
         <Text style={styles.warningText}>
           Your cloud-synced preferences, devices, and sessions will be permanently erased.
         </Text>
-      </AppleCard>
+      </Card>
 
       {error ? (
         <View style={styles.errorBox}>
@@ -50,7 +50,7 @@ export default function DeleteAccountScreen() {
       ) : null}
 
       <View style={styles.actionStack}>
-        <AppleButton
+        <Button
           testID="confirm-delete-button"
           disabled={isDeleting}
           isLoading={isDeleting}
@@ -58,15 +58,15 @@ export default function DeleteAccountScreen() {
           variant="destructive"
         >
           Permanently Delete My Account
-        </AppleButton>
+        </Button>
 
-        <AppleButton
+        <Button
           onPress={() => router.back()}
           variant="ghost"
           disabled={isDeleting}
         >
           Cancel and Keep Account
-        </AppleButton>
+        </Button>
       </View>
     </Screen>
   );

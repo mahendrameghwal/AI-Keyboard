@@ -2,7 +2,7 @@ import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Screen, ScreenTitle } from '../../components/Screen';
-import { AppleButton, AppleCard, AppleInput } from '../../components/ui';
+import { Button, Card, Input } from '../../components/ui';
 import { useAuth } from '../../features/auth/AuthContext';
 import { colors, radii, spacing, typography } from '../../theme';
 
@@ -57,10 +57,10 @@ export default function RegisterScreen() {
         </View>
       ) : null}
 
-      <AppleCard surface="white" padding="md" style={styles.formCard}>
+      <Card surface="white" padding="md" style={styles.formCard}>
         <View style={styles.field}>
           <Text style={styles.label}>Email Address</Text>
-          <AppleInput
+          <Input
             testID="register-email"
             value={email}
             onChangeText={setEmail}
@@ -73,7 +73,7 @@ export default function RegisterScreen() {
 
         <View style={styles.field}>
           <Text style={styles.label}>Password (minimum 8 characters)</Text>
-          <AppleInput
+          <Input
             testID="register-password"
             value={password}
             onChangeText={setPassword}
@@ -85,7 +85,7 @@ export default function RegisterScreen() {
 
         <View style={styles.field}>
           <Text style={styles.label}>Confirm Password</Text>
-          <AppleInput
+          <Input
             testID="register-confirm-password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
@@ -95,7 +95,7 @@ export default function RegisterScreen() {
           />
         </View>
 
-        <AppleButton
+        <Button
           testID="register-submit"
           onPress={onSubmit}
           disabled={isSubmitting}
@@ -104,7 +104,7 @@ export default function RegisterScreen() {
           style={styles.submitBtn}
         >
           Create Account
-        </AppleButton>
+        </Button>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Already have an account? </Text>
@@ -112,7 +112,7 @@ export default function RegisterScreen() {
             Sign In
           </Link>
         </View>
-      </AppleCard>
+      </Card>
     </Screen>
   );
 }

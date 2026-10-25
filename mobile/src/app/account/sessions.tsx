@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Screen, ScreenTitle } from '../../components/Screen';
-import { AppleButton, AppleCard } from '../../components/ui';
+import { Button, Card } from '../../components/ui';
 import { useAppDeps } from '../../services/deps';
 import { colors, radii, spacing, typography } from '../../theme';
 
@@ -68,7 +68,7 @@ export default function SessionsScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <AppleCard surface="pearl" padding="sm" style={styles.sessionCard}>
+            <Card surface="pearl" padding="sm" style={styles.sessionCard}>
               <View style={styles.sessionInfo}>
                 <Text style={styles.deviceName}>
                   {item.device?.name ?? `${item.device?.platform ?? 'Unknown'} Device`}
@@ -81,7 +81,7 @@ export default function SessionsScreen() {
                 </Text>
               </View>
 
-              <AppleButton
+              <Button
                 testID={`revoke-session-${item.id}`}
                 disabled={revokingId === item.id}
                 isLoading={revokingId === item.id}
@@ -90,8 +90,8 @@ export default function SessionsScreen() {
                 variant="destructive"
               >
                 Sign Out
-              </AppleButton>
-            </AppleCard>
+              </Button>
+            </Card>
           )}
         />
       )}

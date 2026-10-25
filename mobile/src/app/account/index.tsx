@@ -1,7 +1,7 @@
 import { Link, useRouter } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Screen, ScreenTitle } from '../../components/Screen';
-import { AppleButton, AppleCard } from '../../components/ui';
+import { Button, Card } from '../../components/ui';
 import { useAuth } from '../../features/auth/AuthContext';
 import { colors, radii, spacing, typography } from '../../theme';
 
@@ -30,21 +30,21 @@ export default function AccountScreen() {
         </Text>
 
         <View style={styles.actions}>
-          <AppleButton
+          <Button
             testID="account-sign-in"
             variant="primary"
             onPress={() => router.push('/auth/login')}
           >
             Sign In
-          </AppleButton>
+          </Button>
 
-          <AppleButton
+          <Button
             testID="account-register"
             variant="secondary"
             onPress={() => router.push('/auth/register')}
           >
             Create New Account
-          </AppleButton>
+          </Button>
         </View>
       </Screen>
     );
@@ -54,19 +54,19 @@ export default function AccountScreen() {
     <Screen>
       <ScreenTitle testID="account-title">Your Account</ScreenTitle>
 
-      <AppleCard surface="pearl" padding="md" style={styles.profileCard}>
+      <Card surface="pearl" padding="md" style={styles.profileCard}>
         <Text style={styles.cardLabel}>Signed in as</Text>
         <Text testID="user-email" style={styles.userEmail}>
           {user.email}
         </Text>
         <Text style={styles.userId}>User ID: {user.id}</Text>
-      </AppleCard>
+      </Card>
 
       <View style={styles.menu}>
         <Link href="/sync" asChild>
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Cloud Preference Sync</Text>
+               <Text style={styles.menuTitle}>Cloud Preference Sync</Text>
               <Text style={styles.menuSub}>Sync tone, style, and length preferences</Text>
             </View>
           </TouchableOpacity>
@@ -81,7 +81,7 @@ export default function AccountScreen() {
           </TouchableOpacity>
         </Link>
 
-        <AppleButton
+        <Button
           testID="account-logout"
           variant="secondary"
           onPress={async () => {
@@ -91,7 +91,7 @@ export default function AccountScreen() {
           style={styles.logoutButton}
         >
           Sign Out
-        </AppleButton>
+        </Button>
 
         <Link href="/account/delete" style={styles.deleteLink}>
           <Text style={styles.deleteLinkText}>Delete Account (Permanent)</Text>

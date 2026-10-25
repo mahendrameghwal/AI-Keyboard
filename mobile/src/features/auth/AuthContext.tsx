@@ -24,20 +24,27 @@ export function AuthProvider({ children }: PropsWithChildren): React.JSX.Element
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const initAuth = useCallback(async () => {
-    try {
-      const session = await deps.auth.getSession();
-      setUser(session?.user ?? null);
-    } catch {
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [deps]);
-
   useEffect(() => {
-    void initAuth();
-  }, [initAuth]);
+    let isMounted = true;
+    deps.auth
+      .getSession()
+      .then((session) => {
+        if (isMounted) {
+          setUser(session?.user ?? null);
+          setIsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setUser(null);
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [deps]);
 
   const login = useCallback(
     async (email: string, password: string) => {

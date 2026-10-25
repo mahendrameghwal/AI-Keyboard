@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Screen, ScreenTitle } from '../components/Screen';
-import { AppleButton, AppleCard, AppleInput } from '../components/ui';
+import { Button, Card, Input } from '../components/ui';
 import { ProviderSettings } from '../features/providers/settings';
 import { API_BASE_URL } from '../services/api';
 import { useAppDeps } from '../services/deps';
@@ -76,7 +76,7 @@ export default function ProviderSettingsScreen() {
         ) : null}
 
         {rows.isError ? (
-          <AppleCard surface="pearl" style={styles.errorCard}>
+          <Card surface="pearl" style={styles.errorCard}>
             <Text style={styles.errorTitle}>Cannot load AI Providers</Text>
             <Text testID="providers-error" style={styles.errorMessage}>
               {rows.error instanceof Error ? rows.error.message : 'Cannot reach backend service.'}
@@ -85,16 +85,16 @@ export default function ProviderSettingsScreen() {
               Target: {API_BASE_URL}
               {'\n'}Make sure the API server is running (`npm run api:dev`) and reachable on your Wi-Fi network.
             </Text>
-            <AppleButton size="compact" variant="destructive" onPress={refresh} style={styles.retryBtn}>
+            <Button size="compact" variant="destructive" onPress={refresh} style={styles.retryBtn}>
               Retry Connection
-            </AppleButton>
-          </AppleCard>
+            </Button>
+          </Card>
         ) : null}
 
         {rows.data && rows.data.length > 0 ? (
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Available Providers</Text>
-            <AppleCard surface="pearl" padding="none" style={styles.groupCard}>
+            <Card surface="pearl" padding="none" style={styles.groupCard}>
               {rows.data.map((row, index) => {
                 const isCurrentSelected = selected === row.provider.id;
                 const isLast = index === rows.data.length - 1;
@@ -149,12 +149,12 @@ export default function ProviderSettingsScreen() {
                   </View>
                 );
               })}
-            </AppleCard>
+            </Card>
           </View>
         ) : null}
 
         {selectedRow ? (
-          <AppleCard surface="white" padding="md" style={styles.formCard}>
+          <Card surface="white" padding="md" style={styles.formCard}>
             <Text style={styles.formTitle}>Configure {selectedRow.provider.name}</Text>
 
             <View style={styles.fieldSection}>
@@ -180,7 +180,7 @@ export default function ProviderSettingsScreen() {
 
             <View style={styles.fieldSection}>
               <Text style={styles.fieldLabel}>API Key</Text>
-              <AppleInput
+              <Input
                 testID="key-input"
                 value={keyInput}
                 onChangeText={setKeyInput}
@@ -192,12 +192,12 @@ export default function ProviderSettingsScreen() {
             </View>
 
             <View style={styles.buttonStack}>
-              <AppleButton testID="test-button" variant="secondary" onPress={onTest}>
+              <Button testID="test-button" variant="secondary" onPress={onTest}>
                 Test connection
-              </AppleButton>
-              <AppleButton testID="save-button" variant="primary" onPress={onSave}>
+              </Button>
+              <Button testID="save-button" variant="primary" onPress={onSave}>
                 Save and use
-              </AppleButton>
+              </Button>
             </View>
 
             {outcome ? (
@@ -215,7 +215,7 @@ export default function ProviderSettingsScreen() {
                 </Text>
               </View>
             ) : null}
-          </AppleCard>
+          </Card>
         ) : null}
       </ScrollView>
     </Screen>

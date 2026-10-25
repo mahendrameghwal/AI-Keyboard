@@ -1,7 +1,7 @@
 import { StyleSheet, Text } from 'react-native';
 import { InfoList } from '../components/InfoList';
 import { Screen, ScreenTitle } from '../components/Screen';
-import { AppleCard } from '../components/ui';
+import { Card } from '../components/ui';
 import { DISCLOSURE } from '../features/disclosure/copy';
 import { colors, spacing, typography } from '../theme';
 
@@ -13,9 +13,9 @@ export default function Privacy() {
         Your privacy and device security come first. Here is how your data is treated.
       </Text>
 
-      <AppleCard surface="pearl" padding="md" style={styles.card}>
+      <Card surface="pearl" padding="md" style={styles.card}>
         <InfoList items={DISCLOSURE.points} testID="privacy-disclosure" />
-      </AppleCard>
+      </Card>
     </Screen>
   );
 }
