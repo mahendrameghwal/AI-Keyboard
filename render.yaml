@@ -5,8 +5,8 @@ services:
     plan: free
     region: oregon
     rootDir: .
-    buildCommand: npm ci && npx prisma generate --schema api/prisma/schema.prisma && npm run api:build
-    preDeployCommand: npx prisma migrate deploy --schema api/prisma/schema.prisma
+    buildCommand: npm ci && npm run prisma:generate && npm run api:build
+    preDeployCommand: npm run prisma:deploy
     startCommand: npm run start --workspace api
     healthCheckPath: /health
     envVars:

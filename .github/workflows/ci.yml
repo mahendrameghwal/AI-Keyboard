@@ -33,9 +33,9 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Generate Prisma client
-        run: npx prisma generate --schema api/prisma/schema.prisma
+        run: npm run prisma:generate
       - name: Deploy Prisma migrations
-        run: npx prisma migrate deploy --schema api/prisma/schema.prisma
+        run: npm run prisma:deploy
       - run: npm run api:typecheck
       - run: npm run api:lint
       - run: npm run api:test
