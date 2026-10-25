@@ -10,6 +10,7 @@ import type { ReactNode } from 'react';
 import Providers from '../src/app/providers';
 import Welcome from '../src/app/index';
 import { DepsProvider, type AppDeps } from '../src/services/deps';
+import { AuthStore } from '../src/storage/auth';
 import { PreferencesRepository } from '../src/storage/preferences';
 import { ProviderKeyStore } from '../src/storage/providerKeys';
 import { type Call, KEY, makeClientFactory } from '../test/helpers/fakeBackend';
@@ -28,6 +29,7 @@ function buildDeps(calls: Call[]): AppDeps {
   const make = makeClientFactory(calls);
   return {
     api: make(),
+    auth: new AuthStore(new MemorySecretStore(), new MemoryJsonStore()),
     providerKeys: new ProviderKeyStore(new MemorySecretStore(), new MemoryJsonStore()),
     preferences: new PreferencesRepository(new MemoryJsonStore()),
     clientWithKey: (key) => make(key),

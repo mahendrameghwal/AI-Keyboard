@@ -13,8 +13,10 @@ build/
 .env.*
 !.env.example
 
-#agents
+# Agents
 .agents/
+.agents
+**/.agents/
 
 # Logs
 logs/

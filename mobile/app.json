@@ -28,6 +28,16 @@
       "expo-router",
       "expo-status-bar",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "e515af46-1cfc-48a1-8f97-26816e5ab533"
+      }
+    }
   }
 }
