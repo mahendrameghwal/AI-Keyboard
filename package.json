@@ -17,6 +17,8 @@
     "api:test": "npm run test --workspace api",
     "api:lint": "npm run lint --workspace api",
     "api:typecheck": "npm run typecheck --workspace api",
+    "prisma:deploy": "npm run prisma:deploy --workspace api",
+    "prisma:generate": "npm run prisma:generate --workspace api",
     "mobile:dev": "npm run start --workspace mobile",
     "mobile:typecheck": "npm run typecheck --workspace mobile",
     "mobile:prebuild": "npm run prebuild --workspace mobile",
