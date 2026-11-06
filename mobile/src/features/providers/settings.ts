@@ -4,13 +4,14 @@ import {
   type Provider,
   type ProviderCatalogOutput,
 } from '@ai-keyboard/shared-contracts/schemas';
+import { describeApiError } from '../../services/errors';
 import type { ProviderKeyStore } from '../../storage/providerKeys';
 
 /** One entry of the server-maintained catalog (plan: ids are not pinned to the app build). */
 export type CatalogProvider = ProviderCatalogOutput['providers'][number];
 
-/** The typed client only accepts contract-known ids; anything newer is shown but not testable here. */
-function asKnownProvider(id: string): Provider | null {
+/** The typed client only accepts contract-known ids; anything newer is shown but not usable until the app updates. */
+export function asKnownProvider(id: string): Provider | null {
   return (PROVIDERS as readonly string[]).includes(id) ? (id as Provider) : null;
 }
 
@@ -76,7 +77,7 @@ export class ProviderSettings {
     } catch (error) {
       return {
         valid: false,
-        message: error instanceof Error ? error.message : 'The test request failed.',
+        message: describeApiError(error, 'The test request failed.'),
       };
     }
   }

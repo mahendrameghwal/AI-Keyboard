@@ -26,11 +26,14 @@ const ACTION_INSTRUCTION: Record<ActionType, string> = {
   fix: 'Correct spelling, grammar, punctuation, and sentence structure without changing the meaning.',
   rewrite: 'Rewrite the text while preserving its original meaning.',
   shorten: 'Shorten the text, preserving all essential information and removing filler.',
-  expand: 'Expand the text into complete, natural sentences while preserving the user intent and inventing no new facts.',
+  expand:
+    'Expand the text into complete, natural sentences while preserving the user intent and inventing no new facts.',
   summarize: 'Summarize the text, preserving the main points and removing unnecessary detail.',
   explain: 'Explain the text in clear, simpler language while preserving its meaning.',
-  continue: 'Continue the text by writing the next sentence or paragraph, matching its style and intent.',
-  email: 'Compose a complete email from the user request. Return a JSON object with exactly the keys "subject" and "body" and nothing else.',
+  continue:
+    'Continue the text by writing the next sentence or paragraph, matching its style and intent.',
+  email:
+    'Compose a complete email from the user request. Return a JSON object with exactly the keys "subject" and "body" and nothing else.',
   reply: 'Write a reply to the supplied message, responding only to the information provided.',
 };
 

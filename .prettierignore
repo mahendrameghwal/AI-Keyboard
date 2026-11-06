@@ -1,0 +1,5 @@
+# Build output and generated files — prettier must not fight the generators.
+dist/
+coverage/
+.expo/
+shared-contracts/src/types.ts

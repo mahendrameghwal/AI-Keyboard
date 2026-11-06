@@ -44,6 +44,11 @@ export class ProviderKeyStore {
     const id = ProviderId.parse(provider);
     const trimmed = rawKey.trim();
     if (trimmed.length === 0) throw new Error('An API key cannot be empty.');
+    if (!(await this.secrets.isAvailable())) {
+      throw new Error(
+        'This device cannot store secrets securely. Set a lock screen PIN or password, then save the key again.',
+      );
+    }
     await this.secrets.write(secretName(id), trimmed);
     await this.writeIndex(this.addedTo(await this.listIds(), id));
   }

@@ -83,22 +83,44 @@ if (args.reportOnly) {
 }
 
 /**
- * Known advisories with documented architectural mitigations:
- * - `zod`: Collection/regex DoS mitigated by strict MAX_REQUEST_BODY_BYTES (64KB) ceiling in api server.
- * - `body-parser`: Request size & URL-encoding depth bounded by express json/urlencoded limits.
+ * Advisories deliberately left open. Matching is by GHSA id, never by package name, so a NEW
+ * advisory for the same package still fails the gate. Drop an entry as soon as the fix lands.
  */
-const MITIGATED_ADVISORIES = new Set(['zod', 'body-parser']);
+const ACCEPTED_ADVISORIES = [
+  {
+    id: 'GHSA-mrhx-c7xc-m3w5',
+    package: 'zod',
+    reason:
+      'Needs an unbounded collection to exhaust memory; every api schema caps array length and the 64 KB body ceiling bounds input. Real fix is zod 4, which breaks .strict() and issue codes.',
+  },
+];
+
+/** GHSA ids reachable from a vulnerability entry. */
+function advisoryIds(vulnerability) {
+  return (vulnerability.via ?? [])
+    .filter((via) => typeof via === 'object' && typeof via.url === 'string')
+    .map((via) => /GHSA-[a-z0-9-]+/i.exec(via.url)?.[0])
+    .filter(Boolean);
+}
 
 const inTree = productionPackageNames(args.workspace);
-const hits = all.filter((v) => inTree.has(v.name) && !MITIGATED_ADVISORIES.has(v.name));
-const mitigated = all.filter((v) => inTree.has(v.name) && MITIGATED_ADVISORIES.has(v.name));
+const treeHits = all.filter((v) => inTree.has(v.name));
+const accepted = [];
+const hits = [];
+for (const hit of treeHits) {
+  const ids = advisoryIds(hit);
+  const match = ACCEPTED_ADVISORIES.find((a) => a.package === hit.name && ids.includes(a.id));
+  if (match) accepted.push({ ...match, severity: hit.severity, range: hit.range });
+  else hits.push(hit);
+}
 
 console.log(
   `workspace "${args.workspace}": ${inTree.size} production packages, ` +
-    `${hits.length} unmitigated advisory(ies) at ${args.failOn}+ (${mitigated.length} architecturally mitigated)`,
+    `${hits.length} blocking advisory(ies) at ${args.failOn}+ (${accepted.length} accepted with a recorded reason)`,
 );
 for (const hit of hits) console.log(` - ${hit.severity}: ${hit.name} (range ${hit.range})`);
-for (const m of mitigated) console.log(` - [mitigated] ${m.severity}: ${m.name} (range ${m.range})`);
+for (const a of accepted) {
+  console.log(` - [accepted ${a.id}] ${a.severity}: ${a.package} — ${a.reason}`);
+}
 
 if (hits.length > 0) process.exit(1);
-

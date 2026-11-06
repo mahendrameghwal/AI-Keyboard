@@ -1,7 +1,9 @@
 # Privacy — AI Keyboard
 
-Applies to SRS §16 and plan decisions D1–D11. Mobile disclosure screens are **planned** (Phase 6/8);
-the backend behaviour described here is what is implemented today.
+Applies to SRS §16 and plan decisions D1–D11. The app-side disclosure screen is shipped
+(`mobile/src/app/privacy.tsx`, copy in `mobile/src/features/disclosure/copy.ts`); the keyboard-side
+disclosures (iOS Full Access prompt, sensitive-field notice) stay **planned** with the native IME in Phase 2.
+The backend behaviour described here is what runs today.
 
 ## What the service is
 

@@ -11,8 +11,8 @@ info:
 servers:
   - url: http://localhost:3000
     description: Local development
-  - url: https://api.example.com
-    description: Production (placeholder — replace with deployed domain)
+  - url: https://ai-keyboard-api.onrender.com
+    description: Production (Render, behind Cloudflare) — matches app.json#extra.apiBaseUrl
 
 tags:
   - name: Health
@@ -21,6 +21,10 @@ tags:
   - name: Users
   - name: Sync
 
+# Every endpoint requires a bearer access token unless it opts out with `security: []`.
+security:
+  - bearerAuth: []
+
 paths:
   /health:
     get:
@@ -28,7 +32,7 @@ paths:
       summary: Liveness check
       security: []
       responses:
-        "200":
+        '200':
           description: Service is up
           content:
             application/json:
@@ -42,18 +46,18 @@ paths:
       summary: Dependency readiness check
       security: []
       responses:
-        "200":
+        '200':
           description: Ready
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Readiness"
-        "503":
+                $ref: '#/components/schemas/Readiness'
+        '503':
           description: Degraded
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Readiness"
+                $ref: '#/components/schemas/Readiness'
 
   /v1/ai/generate:
     post:
@@ -64,28 +68,28 @@ paths:
         Streaming is not supported in the MVP (`options.stream` must be false).
       security: []
       parameters:
-        - $ref: "#/components/parameters/ProviderKey"
-        - $ref: "#/components/parameters/RequestId"
+        - $ref: '#/components/parameters/ProviderKey'
+        - $ref: '#/components/parameters/RequestId'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "./schemas/ai-request.schema.json"
+              $ref: './schemas/ai-request.schema.json'
       responses:
-        "200":
+        '200':
           description: Generation result
           content:
             application/json:
               schema:
-                $ref: "./schemas/ai-response.schema.json"
-        "400": { $ref: "#/components/responses/Error" }
-        "413": { $ref: "#/components/responses/Error" }
-        "422": { $ref: "#/components/responses/Error" }
-        "429": { $ref: "#/components/responses/Error" }
-        "502": { $ref: "#/components/responses/Error" }
-        "503": { $ref: "#/components/responses/Error" }
-        "504": { $ref: "#/components/responses/Error" }
+                $ref: './schemas/ai-response.schema.json'
+        '400': { $ref: '#/components/responses/Error' }
+        '413': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+        '502': { $ref: '#/components/responses/Error' }
+        '503': { $ref: '#/components/responses/Error' }
+        '504': { $ref: '#/components/responses/Error' }
 
   /v1/ai/providers:
     get:
@@ -93,7 +97,7 @@ paths:
       summary: List supported providers and models
       security: []
       responses:
-        "200":
+        '200':
           description: Provider catalog
           content:
             application/json:
@@ -103,7 +107,7 @@ paths:
                   providers:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Provider"
+                      $ref: '#/components/schemas/Provider'
 
   /v1/ai/providers/test:
     post:
@@ -111,9 +115,9 @@ paths:
       summary: Validate provider credentials
       security: []
       parameters:
-        - $ref: "#/components/parameters/ProviderKey"
+        - $ref: '#/components/parameters/ProviderKey'
       responses:
-        "200":
+        '200':
           description: Validation result
           content:
             application/json:
@@ -122,15 +126,14 @@ paths:
                 properties:
                   valid: { type: boolean }
                   message: { type: string }
-        "422": { $ref: "#/components/responses/Error" }
+        '422': { $ref: '#/components/responses/Error' }
 
   /v1/ai/usage:
     get:
       tags: [AI]
       summary: Retrieve usage information (feature-flagged off in MVP)
-      security: []
       responses:
-        "200":
+        '200':
           description: Usage summary (or feature-disabled payload)
           content:
             application/json:
@@ -139,6 +142,7 @@ paths:
                 properties:
                   enabled: { type: boolean }
                   events: { type: array, items: { type: object } }
+        '401': { $ref: '#/components/responses/Error' }
 
   /v1/auth/register:
     post:
@@ -155,10 +159,10 @@ paths:
               properties:
                 email: { type: string, format: email, maxLength: 254 }
                 password: { type: string, minLength: 8, maxLength: 128 }
-                device: { $ref: "#/components/schemas/Device" }
+                device: { $ref: '#/components/schemas/Device' }
       responses:
-        "201": { description: Created }
-        "409": { $ref: "#/components/responses/Error" }
+        '201': { description: Created }
+        '409': { $ref: '#/components/responses/Error' }
 
   /v1/auth/login:
     post:
@@ -175,10 +179,10 @@ paths:
               properties:
                 email: { type: string, format: email, maxLength: 254 }
                 password: { type: string, maxLength: 128 }
-                device: { $ref: "#/components/schemas/Device" }
+                device: { $ref: '#/components/schemas/Device' }
       responses:
-        "200": { description: Tokens issued }
-        "401": { $ref: "#/components/responses/Error" }
+        '200': { description: Tokens issued }
+        '401': { $ref: '#/components/responses/Error' }
 
   /v1/auth/refresh:
     post:
@@ -195,13 +199,15 @@ paths:
               properties:
                 refreshToken: { type: string }
       responses:
-        "200": { description: Rotated }
-        "401": { $ref: "#/components/responses/Error" }
+        '200': { description: Rotated }
+        '401': { $ref: '#/components/responses/Error' }
 
   /v1/auth/logout:
     post:
       tags: [Auth]
       summary: Revoke session
+      description: Identified by the refresh token in the body, so no access token is required.
+      security: []
       requestBody:
         required: true
         content:
@@ -212,26 +218,29 @@ paths:
               properties:
                 refreshToken: { type: string }
       responses:
-        "204": { description: Revoked }
+        '204': { description: Revoked }
 
   /v1/users/me:
     get:
       tags: [Users]
       summary: Retrieve profile
       responses:
-        "200": { description: Profile }
+        '200': { description: Profile }
+        '401': { $ref: '#/components/responses/Error' }
     delete:
       tags: [Users]
       summary: Request account deletion
       responses:
-        "202": { description: Deletion scheduled }
+        '202': { description: Deletion scheduled }
+        '401': { $ref: '#/components/responses/Error' }
 
   /v1/users/me/sessions:
     get:
       tags: [Users]
       summary: List active sessions/devices
       responses:
-        "200": { description: Sessions }
+        '200': { description: Sessions }
+        '401': { $ref: '#/components/responses/Error' }
 
   /v1/users/me/sessions/{id}:
     delete:
@@ -243,20 +252,22 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        "204": { description: Revoked }
-        "404": { $ref: "#/components/responses/Error" }
+        '204': { description: Revoked }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
 
   /v1/sync/preferences:
     get:
       tags: [Sync]
       summary: Retrieve synced preferences
       responses:
-        "200":
+        '200':
           description: Preferences
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Preferences"
+                $ref: '#/components/schemas/Preferences'
+        '401': { $ref: '#/components/responses/Error' }
     put:
       tags: [Sync]
       summary: Update synced preferences (optimistic concurrency)
@@ -266,14 +277,21 @@ paths:
           application/json:
             schema:
               allOf:
-                - $ref: "#/components/schemas/Preferences"
+                - $ref: '#/components/schemas/Preferences'
                 - type: object
                   required: [version]
       responses:
-        "200": { description: Updated }
-        "409": { $ref: "#/components/responses/Error" }
+        '200': { description: Updated }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from `/v1/auth/login` or `/v1/auth/register` (15 minutes).
   parameters:
     ProviderKey:
       name: X-Provider-Key
@@ -292,7 +310,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            $ref: '#/components/schemas/Error'
   schemas:
     Error:
       type: object
@@ -360,7 +378,18 @@ components:
       properties:
         writingStyle:
           type: string
-          enum: [professional, casual, polite, funny, friendly, romantic, confident, empathetic, neutral]
+          enum:
+            [
+              professional,
+              casual,
+              polite,
+              funny,
+              friendly,
+              romantic,
+              confident,
+              empathetic,
+              neutral,
+            ]
         toneStrength: { type: string, enum: [soft, balanced, hard] }
         formality: { type: string, enum: [formal, neutral, informal] }
         defaultLength: { type: string, enum: [very_short, short, normal, detailed, elaborate] }

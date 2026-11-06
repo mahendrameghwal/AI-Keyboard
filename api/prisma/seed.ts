@@ -35,7 +35,9 @@ const SEED_USER = {
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-async function testOpenAIKey(apiKey: string): Promise<{ valid: boolean; message: string; modelsCount?: number }> {
+async function testOpenAIKey(
+  apiKey: string,
+): Promise<{ valid: boolean; message: string; modelsCount?: number }> {
   try {
     const res = await fetch('https://api.openai.com/v1/models', {
       headers: {
@@ -136,7 +138,9 @@ async function main() {
       console.warn(`⚠ OpenAI API Key validation warning: ${openAiResult.message}`);
     }
   } else {
-    console.log('\n--- [AI Provider] No OPENAI_API_KEY provided in environment, skipping provider test. ---');
+    console.log(
+      '\n--- [AI Provider] No OPENAI_API_KEY provided in environment, skipping provider test. ---',
+    );
   }
 
   console.log('\n=============================================');
@@ -145,7 +149,9 @@ async function main() {
   console.log(`Password:   ${SEED_USER.password}`);
   console.log(`User ID:    ${user.id}`);
   if (OPENAI_API_KEY && openAiResult) {
-    console.log(`OpenAI Key: ${OPENAI_API_KEY.slice(0, 10)}...${OPENAI_API_KEY.slice(-4)} (${openAiResult.valid ? 'VALID' : 'INVALID'})`);
+    console.log(
+      `OpenAI Key: ${OPENAI_API_KEY.slice(0, 10)}...${OPENAI_API_KEY.slice(-4)} (${openAiResult.valid ? 'VALID' : 'INVALID'})`,
+    );
   } else {
     console.log('OpenAI Key: Not provided in environment');
   }
@@ -160,4 +166,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

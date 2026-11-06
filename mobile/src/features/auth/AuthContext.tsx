@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
   useCallback,
@@ -6,8 +7,12 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
+import { Platform } from 'react-native';
 import type { AuthUser } from '../../storage/auth';
 import { useAppDeps } from '../../services/deps';
+
+/** What the API records for the device; the app also runs on web during development. */
+const DEVICE_PLATFORM = Platform.OS === 'ios' ? 'ios' : 'android';
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -21,6 +26,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren): React.JSX.Element {
   const deps = useAppDeps();
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -51,7 +57,7 @@ export function AuthProvider({ children }: PropsWithChildren): React.JSX.Element
       const result = await deps.api.login({
         email,
         password,
-        device: { platform: 'android', name: 'AI Keyboard Mobile' },
+        device: { platform: DEVICE_PLATFORM, name: 'AI Keyboard Mobile' },
       });
       await deps.auth.saveSession({
         user: result.user,
@@ -68,7 +74,7 @@ export function AuthProvider({ children }: PropsWithChildren): React.JSX.Element
       const result = await deps.api.register({
         email,
         password,
-        device: { platform: 'android', name: 'AI Keyboard Mobile' },
+        device: { platform: DEVICE_PLATFORM, name: 'AI Keyboard Mobile' },
       });
       await deps.auth.saveSession({
         user: result.user,
@@ -90,8 +96,10 @@ export function AuthProvider({ children }: PropsWithChildren): React.JSX.Element
       }
     }
     await deps.auth.clearSession();
+    // Cached queries belong to the account that just signed out.
+    queryClient.clear();
     setUser(null);
-  }, [deps]);
+  }, [deps, queryClient]);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
@@ -103,13 +111,7 @@ export function AuthProvider({ children }: PropsWithChildren): React.JSX.Element
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) {
-    return {
-      user: null,
-      isLoading: false,
-      login: async () => {},
-      register: async () => {},
-      logout: async () => {},
-    };
+    throw new Error('useAuth must be used inside AuthProvider.');
   }
   return ctx;
 }

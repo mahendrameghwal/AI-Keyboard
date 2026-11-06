@@ -20,6 +20,10 @@ services:
         generateValue: true
       - key: LOG_LEVEL
         value: info
+      # Cloudflare (1 hop) in front of Render's own ingress (1 hop). Too low merges every
+      # visitor into one rate-limit bucket; too high lets clients spoof X-Forwarded-For.
+      - key: TRUST_PROXY
+        value: '2'
       - key: RATE_LIMIT_WINDOW_SECONDS
         value: 3600
       - key: RATE_LIMIT_GENERATE_ANON

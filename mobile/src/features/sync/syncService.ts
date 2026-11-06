@@ -1,6 +1,7 @@
 import { ApiRequestError } from '@ai-keyboard/shared-contracts/client';
 import type { PreferencesOutput } from '@ai-keyboard/shared-contracts/schemas';
 import type { AppDeps } from '../../services/deps';
+import { describeApiError } from '../../services/errors';
 
 export interface SyncOutcome {
   synced: boolean;
@@ -37,7 +38,7 @@ export class SyncService {
       return {
         synced: false,
         preferences: local,
-        message: err instanceof Error ? err.message : 'Sync failed.',
+        message: describeApiError(err, 'Sync failed.'),
       };
     }
   }

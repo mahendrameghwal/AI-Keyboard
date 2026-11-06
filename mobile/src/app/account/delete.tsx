@@ -5,6 +5,7 @@ import { Screen, ScreenTitle } from '../../components/Screen';
 import { Button, Card } from '../../components/ui';
 import { useAuth } from '../../features/auth/AuthContext';
 import { useAppDeps } from '../../services/deps';
+import { describeApiError } from '../../services/errors';
 import { colors, radii, spacing, typography } from '../../theme';
 
 export default function DeleteAccountScreen() {
@@ -23,7 +24,7 @@ export default function DeleteAccountScreen() {
       await logout();
       router.replace('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not schedule account deletion.');
+      setError(describeApiError(err, 'Could not schedule account deletion.'));
       setIsDeleting(false);
     }
   };
@@ -60,11 +61,7 @@ export default function DeleteAccountScreen() {
           Permanently Delete My Account
         </Button>
 
-        <Button
-          onPress={() => router.back()}
-          variant="ghost"
-          disabled={isDeleting}
-        >
+        <Button onPress={() => router.back()} variant="ghost" disabled={isDeleting}>
           Cancel and Keep Account
         </Button>
       </View>

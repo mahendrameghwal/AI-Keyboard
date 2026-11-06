@@ -28,6 +28,9 @@ export function SegmentedPill<T extends string>({
         key={opt.id}
         testID={testIDPrefix ? `${testIDPrefix}-${opt.id}` : undefined}
         onPress={() => onSelect(opt.id)}
+        accessibilityRole="radio"
+        accessibilityLabel={opt.label}
+        accessibilityState={{ selected: isSelected }}
         style={[styles.pill, isSelected ? styles.pillSelected : styles.pillUnselected]}
       >
         <Text style={[styles.pillText, isSelected ? styles.textSelected : styles.textUnselected]}>
@@ -39,7 +42,11 @@ export function SegmentedPill<T extends string>({
 
   if (scrollable) {
     return (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+      >
         {content}
       </ScrollView>
     );
@@ -63,6 +70,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     paddingHorizontal: spacing.regular,
     paddingVertical: 8,
+    minHeight: 44,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

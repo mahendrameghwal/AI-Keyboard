@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { copyText } from '../services/clipboard';
 import { colors, radii, spacing, typography } from '../theme';
 import { Button } from './ui';
 
@@ -27,11 +28,9 @@ export function ResultPreview({
 
   if (!result && !email) return null;
 
-  const handleCopy = (text: string, label: string) => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      void navigator.clipboard.writeText(text);
-    }
-    setCopiedText(`${label} copied!`);
+  const handleCopy = async (text: string, label: string) => {
+    const ok = await copyText(text);
+    setCopiedText(ok ? `${label} copied` : `Could not copy the ${label.toLowerCase()}.`);
     setTimeout(() => setCopiedText(null), 2000);
   };
 
@@ -55,6 +54,8 @@ export function ResultPreview({
             </Text>
             <TouchableOpacity
               onPress={() => handleCopy(email.subject, 'Subject')}
+              accessibilityRole="button"
+              accessibilityLabel="Copy subject"
               style={styles.copyPill}
             >
               <Text style={styles.copyPillText}>Copy Subject</Text>
@@ -68,6 +69,8 @@ export function ResultPreview({
             </Text>
             <TouchableOpacity
               onPress={() => handleCopy(email.body, 'Body')}
+              accessibilityRole="button"
+              accessibilityLabel="Copy body"
               style={styles.copyPill}
             >
               <Text style={styles.copyPillText}>Copy Body</Text>
@@ -82,7 +85,11 @@ export function ResultPreview({
         </View>
       )}
 
-      {copiedText ? <Text style={styles.copiedAlert}>{copiedText}</Text> : null}
+      {copiedText ? (
+        <Text accessibilityLiveRegion="polite" style={styles.copiedAlert}>
+          {copiedText}
+        </Text>
+      ) : null}
 
       <View style={styles.actions}>
         {!email && result ? (
@@ -171,6 +178,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: 5,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.border,
   },

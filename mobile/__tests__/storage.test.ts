@@ -31,6 +31,12 @@ describe('ProviderKeyStore', () => {
     await expect(store.save('openai', '   ')).rejects.toThrow('An API key cannot be empty.');
   });
 
+  it('refuses to store a key when the device has no secure storage', async () => {
+    const { secrets, store } = build();
+    secrets.available = false;
+    await expect(store.save('openai', SECRET)).rejects.toThrow(/cannot store secrets securely/);
+  });
+
   it('summaries lists configured providers with masked keys', async () => {
     const { store } = build();
     await store.save('openai', SECRET);

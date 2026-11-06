@@ -162,6 +162,52 @@ describe('ApiClient error normalization', () => {
     expect(onUnauthorized).toHaveBeenCalledWith('SESSION_EXPIRED');
   });
 
+  it('replays the request once after the app refreshes, so the user gets the result', async () => {
+    let refreshed = false;
+    const onUnauthorized = vi.fn(async () => {
+      refreshed = true;
+    });
+    const { client, calls } = harness(
+      () =>
+        refreshed
+          ? jsonResponse(GENERATE_OK)
+          : jsonResponse(
+              { error: { code: 'SESSION_EXPIRED', message: 'Expired', retryable: false } },
+              401,
+            ),
+      { onUnauthorized },
+    );
+
+    const out = await client.generate({
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      action: 'fix',
+      text: 'Fix this sentance',
+    });
+
+    expect(out.result).toBe('Rewritten text');
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+    expect(calls).toHaveLength(2);
+  });
+
+  it('stops after one replay instead of looping when the fresh token is also rejected', async () => {
+    const onUnauthorized = vi.fn();
+    const { client, calls } = harness(
+      () =>
+        jsonResponse(
+          { error: { code: 'SESSION_EXPIRED', message: 'Expired', retryable: false } },
+          401,
+        ),
+      { onUnauthorized },
+    );
+
+    await expect(
+      client.generate({ provider: 'openai', model: 'gpt-4o-mini', action: 'fix', text: 'abc' }),
+    ).rejects.toMatchObject({ code: 'SESSION_EXPIRED', status: 401 });
+    expect(calls).toHaveLength(2);
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+  });
+
   it('surfaces a preference version conflict with the server state', async () => {
     const { client } = harness(() =>
       jsonResponse(

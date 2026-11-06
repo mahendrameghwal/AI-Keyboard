@@ -67,7 +67,7 @@ export function Button({
       flexDirection: 'row',
       paddingHorizontal: size === 'compact' ? spacing.md : spacing.lg,
       paddingVertical: size === 'compact' ? 8 : 13,
-      minHeight: size === 'compact' ? 36 : 48,
+      minHeight: size === 'compact' ? 44 : 48,
       backgroundColor,
       borderWidth,
       borderColor,
@@ -106,6 +106,9 @@ export function Button({
       onPressIn={() => setIsPressed(true)}
       onPressOut={() => setIsPressed(false)}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={children}
+      accessibilityState={{ disabled: disabled || isLoading, busy: isLoading }}
       style={[getContainerStyle(), style]}
     >
       {isLoading ? (

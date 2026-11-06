@@ -97,7 +97,26 @@ export class ApiClient {
     };
   }
 
-  private async send<T>(spec: RequestSpec<T>): Promise<T> {
+  /**
+   * 401 policy in one place: the first pass tells the app so it can refresh, then the
+   * request is replayed exactly once with whatever token the app now has.
+   */
+  private async send<T>(spec: RequestSpec<T>, replayed = false): Promise<T> {
+    try {
+      return await this.attempt(spec, !replayed);
+    } catch (err) {
+      const needsRefresh =
+        !replayed &&
+        err instanceof ApiRequestError &&
+        err.status === 401 &&
+        spec.auth === true &&
+        !spec.allowUnauthorized;
+      if (!needsRefresh) throw err;
+      return this.send(spec, true);
+    }
+  }
+
+  private async attempt<T>(spec: RequestSpec<T>, notify: boolean): Promise<T> {
     const headers: Record<string, string> = { accept: 'application/json' };
     const requestId = this.options.newRequestId();
     headers['x-request-id'] = requestId;
@@ -162,7 +181,7 @@ export class ApiClient {
       const parsed = ErrorEnvelopeSchema.safeParse(payload);
       if (parsed.success && !spec.allowUnauthorized) {
         const code = parsed.data.error.code;
-        if (response.status === 401) await this.options.onUnauthorized?.(code);
+        if (response.status === 401 && notify) await this.options.onUnauthorized?.(code);
         throw new ApiRequestError({
           status: response.status,
           code,
@@ -173,7 +192,7 @@ export class ApiClient {
           details: parsed.data.error.details,
         });
       }
-      if (response.status === 401 && !spec.allowUnauthorized) {
+      if (response.status === 401 && notify && !spec.allowUnauthorized) {
         await this.options.onUnauthorized?.('UNAUTHENTICATED');
       }
       throw new ApiRequestError({

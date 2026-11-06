@@ -49,6 +49,11 @@ export class AuthStore {
   }
 
   async saveSession(session: StoredSession): Promise<void> {
+    if (!(await this.secrets.isAvailable())) {
+      throw new Error(
+        'This device cannot store secrets securely. Set a lock screen PIN or password, then sign in again.',
+      );
+    }
     await Promise.all([
       this.secrets.write(ACCESS_TOKEN_KEY, session.accessToken),
       this.secrets.write(REFRESH_TOKEN_KEY, session.refreshToken),

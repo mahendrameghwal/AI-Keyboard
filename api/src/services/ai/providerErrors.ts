@@ -45,10 +45,7 @@ export function mapAbortError(err: unknown, provider: string): AppError {
       `The AI provider (${provider}) took too long to respond.`,
     );
   }
-  return new AppError(
-    ErrorCode.PROVIDER_TIMEOUT,
-    `The request to ${provider} was cancelled.`,
-  );
+  return new AppError(ErrorCode.PROVIDER_TIMEOUT, `The request to ${provider} was cancelled.`);
 }
 
 export async function readJsonSafe(res: Response): Promise<unknown> {

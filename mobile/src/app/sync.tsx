@@ -1,16 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Screen, ScreenTitle } from '../components/Screen';
 import { Button, Card, SegmentedPill } from '../components/ui';
 import { useAuth } from '../features/auth/AuthContext';
 import { SyncService } from '../features/sync/syncService';
+import { describeApiError } from '../services/errors';
 import { useAppDeps } from '../services/deps';
 import { colors, radii, spacing, typography } from '../theme';
 import type { PreferencesOutput } from '@ai-keyboard/shared-contracts/schemas';
@@ -58,7 +53,11 @@ export default function SyncScreen() {
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const { data: prefs, isLoading } = useQuery({
+  const {
+    data: prefs,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['user-preferences'],
     queryFn: async () => {
       const outcome = await syncService.pull();
@@ -83,6 +82,9 @@ export default function SyncScreen() {
       const outcome = await syncService.push(updated);
       setStatusMessage(outcome.message);
       await queryClient.invalidateQueries({ queryKey: ['user-preferences'] });
+      await queryClient.invalidateQueries({ queryKey: ['local-preferences'] });
+    } catch (err) {
+      setStatusMessage(describeApiError(err, 'Save failed.'));
     } finally {
       setSaving(false);
     }
@@ -94,15 +96,28 @@ export default function SyncScreen() {
       const outcome = await syncService.pull();
       setStatusMessage(outcome.message);
       await queryClient.invalidateQueries({ queryKey: ['user-preferences'] });
+      await queryClient.invalidateQueries({ queryKey: ['local-preferences'] });
+    } catch (err) {
+      setStatusMessage(describeApiError(err, 'Sync failed.'));
     } finally {
       setSaving(false);
     }
   };
 
-  if (isLoading || !prefs) {
+  if (isLoading) {
     return (
       <Screen>
         <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
+      </Screen>
+    );
+  }
+
+  if (!prefs) {
+    return (
+      <Screen>
+        <Text testID="sync-error" style={styles.errorText}>
+          {describeApiError(error, 'Could not load preferences.')}
+        </Text>
       </Screen>
     );
   }
@@ -209,6 +224,11 @@ export default function SyncScreen() {
 }
 
 const styles = StyleSheet.create({
+  errorText: {
+    ...typography.body,
+    color: colors.textMuted,
+    marginTop: spacing.lg,
+  },
   subtitle: {
     ...typography.body,
     color: colors.textMuted,

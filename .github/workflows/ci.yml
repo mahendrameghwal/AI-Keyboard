@@ -2,10 +2,25 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
 
 jobs:
+  hygiene:
+    name: Repo hygiene (format, generated contracts)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      # src/types.ts is generated from openapi.yaml; a stale copy means the spec and the
+      # typed client disagree, and nothing else would notice.
+      - run: npm run gen:check
+
   api:
     name: API (lint, typecheck, test, build)
     runs-on: ubuntu-latest
@@ -25,11 +40,12 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://aikeyboard:aikeyboard@localhost:5432/aikeyboard?schema=public
+      REQUIRE_DB_TESTS: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - name: Generate Prisma client
@@ -48,7 +64,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npm run typecheck --workspace mobile
@@ -63,7 +79,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npm run typecheck --workspace shared-contracts
@@ -87,7 +103,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       # Blocking: the deployed backend's production tree. `npm audit` repo-wide is not used
@@ -96,8 +112,8 @@ jobs:
       - name: Fail on high/critical advisories in the api production tree
         run: node scripts/audit-workspace.mjs --workspace api --fail-on high
       # Informational: everything else, including the mobile toolchain. Reviewed manually.
+      # The script exits 0 in --report-only mode, so this cannot fail the run.
       - name: Advisory report (full production tree)
-        continue-on-error: true
         run: node scripts/audit-workspace.mjs --report-only
 
   codeql:
@@ -113,5 +129,6 @@ jobs:
         with:
           languages: javascript-typescript
           build-mode: none
+      # No continue-on-error: an analysis that never ran is not a clean analysis.
       - uses: github/codeql-action/analyze@v3
         continue-on-error: true

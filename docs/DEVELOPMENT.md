@@ -30,6 +30,11 @@ npm run api:dev                      # http://localhost:3000 — GET /health
 First database schema: `npx prisma migrate dev` from `api/` (migrations are checked into
 `api/prisma/migrations`). After pulling someone else's migration, use `npm run prisma:deploy -w api`.
 
+A local Postgres is optional, not assumed: this host develops against **hosted Prisma Postgres**
+(`pooled.db.prisma.io`, connection string only in git-ignored `api/.env`), `docker-compose.yml` exists for
+anyone who would rather run one locally, and `render.yaml` provisions a separate Render Postgres for the
+deployed API. Pick one in `api/.env`; the three are independent databases with the same schema.
+
 ## Scripts (run from the repository root)
 
 | Command                               | Effect                                |
@@ -78,8 +83,9 @@ Rules that fall out of Continuous Native Generation:
   behavior goes through `app.json` and config plugins. The keyboard target is added as a plugin (plan T2.0).
 - After adding a package with native code, Expo Go no longer suffices: build a dev client with EAS
   (`npx eas-cli@latest build --platform android --profile development`) and install the artifact over `adb`.
-- EAS needs the owner's account once: `npx eas-cli@latest login` then `eas init` (writes the project id into
-  `app.json`). `eas.json` profiles are already committed.
+- The EAS project already exists: `app.json#extra.eas.projectId` is committed, so `eas init` is **not**
+  a setup step. A builder only needs `npx eas-cli@latest login` with an account that has access to the
+  owner's Expo team. `eas.json` profiles are committed.
 - Only `EXPO_PUBLIC_*` values reach the JS bundle, and they are **inlined at build time** — a provider key
   never goes in `.env`; it comes from secure storage at request time.
 
@@ -115,9 +121,10 @@ Provider keys and app state cross one boundary each, so a screen can never accid
 plain storage (or a draft in secure storage):
 
 - [src/storage/secrets.ts](../mobile/src/storage/secrets.ts) — `SecretStore` interface, implemented by
-  `expo-secure-store` (`setItemAsync`/`getItemAsync`/`deleteItemAsync`/`isAvailableAsync`; v58 renamed
-  these, so check the SDK docs rather than memory). Android requires a device lock, and writing throws
-  when secure storage is unavailable.
+  `expo-secure-store` 58.0.2 (`setItemAsync`/`getItemAsync`/`deleteItemAsync`/`isAvailableAsync`, verified
+  against `node_modules/expo-secure-store/build/SecureStore.d.ts`). Android needs a device lock for these to
+  work; `ProviderKeyStore` and the auth session store both check `isAvailable()` first and fail with
+  "set a lock screen PIN or password" instead of writing a key that silently cannot be protected.
 - [src/storage/kv.ts](../mobile/src/storage/kv.ts) — `JsonStore` over AsyncStorage for non-secret state
   only (the configured-provider index, the default provider/model, local preferences).
 - [src/storage/providerKeys.ts](../mobile/src/storage/providerKeys.ts) — `ProviderKeyStore`: raw key
@@ -147,7 +154,7 @@ Welcome, `/privacy` and `/keyboard-setup` render fully in the browser because th
 
 ### Mobile test harness
 
-`npm run test --workspace mobile` (4 suites, 22 tests). Two non-obvious requirements, both already wired:
+`npm run test --workspace mobile` (7 suites, 36 tests). Two non-obvious requirements, both already wired:
 
 - AsyncStorage's binding is null under Jest, so [mobile/jest.setup.js](../mobile/jest.setup.js) installs the
   package's own mock via `setupFiles`.
@@ -183,7 +190,12 @@ Documented in [`api/.env.example`](../api/.env.example). Worth knowing:
 
 - `DISABLED_PROVIDERS=openai,gemini` is the runtime kill switch; `MODEL_CATALOG_PATH` points at a JSON
   file that replaces the built-in model catalog without a redeploy.
-- `BACKGROUND_JOBS_INTERVAL_MINUTES` controls expired-session pruning and account-deletion purging.
+- `BACKGROUND_JOBS_INTERVAL_MINUTES` controls expired-session pruning, `usage_events` pruning
+  (`USAGE_EVENT_RETENTION_DAYS`) and scheduled account deletion. The sweep also runs on the first
+  request after the interval, so a host that sleeps between requests (Render free tier) keeps up.
+- `TRUST_PROXY` is the number of proxy hops in front of the app: 1 for a bare ingress, 2 behind
+  Cloudflare in front of Render. The rate limiter identifies clients by `req.ip`, so a wrong value
+  either merges every visitor into one bucket or lets `X-Forwarded-For` be spoofed.
 - `RATE_LIMIT_AUTH_WINDOW_SECONDS` (60) is separate from the hourly AI limits.
 - `USAGE_TRACKING_ENABLED` and `STREAMING_ENABLED` stay `false` for the MVP.
 
@@ -200,18 +212,25 @@ Documented in [`api/.env.example`](../api/.env.example). Worth knowing:
 
 ## CI
 
-`.github/workflows/ci.yml` runs six jobs: API (typecheck, lint, test against a Postgres 16 service,
-build), Mobile (typecheck, `expo lint`, jest-expo), Shared contracts (typecheck + drift tests), gitleaks
-secret scan, dependency audit, and CodeQL. The workflow triggers on `main` **and** `master`. The repo is on
-`main` and pushed to `origin`, so pushes do run it; confirm the first green run in the Actions tab (this
-host has no `gh` CLI, so the result is not verifiable from the terminal).
+`.github/workflows/ci.yml` runs seven jobs: repo hygiene (`format:check` plus a `gen:check` that fails
+when `shared-contracts/src/types.ts` no longer matches `openapi.yaml`), API (typecheck, lint, test against
+a Postgres 16 service, build), Mobile (typecheck, `expo lint`, jest-expo), Shared contracts (typecheck +
+drift tests), gitleaks secret scan, dependency audit, and CodeQL. It triggers on `main` and pull requests.
+No step uses `continue-on-error`; the advisory report step is informational because the script itself
+exits 0 in `--report-only` mode. The API job sets `REQUIRE_DB_TESTS=true`, and `api/vitest.config.ts`
+refuses to start without `DATABASE_URL` under that flag, so a dead database service fails the run instead
+of silently skipping every DB-backed suite. Node comes from `.nvmrc`. Confirm the first green run in the
+Actions tab (this host has no `gh` CLI, so the result is not verifiable from the terminal).
 
 The audit job is **scoped to the deployed backend**: `node scripts/audit-workspace.mjs --workspace api
 --fail-on high` blocks, and a second non-blocking step prints the full production-tree report. Repo-wide
 `npm audit --audit-level=high` is unusable as a gate because `expo` lists its Metro/dev-server toolchain as
-a runtime dependency, so 14 high advisories can never be cleared from our side — they would drown out a real
-backend regression. Measured with the same script: `api` = 0 high/critical, `mobile` = 14. The intersection
-is by package name, so it errs toward over-reporting rather than missing anything that reaches the backend.
+a runtime dependency, so those advisories can never be cleared from our side — they would drown out a real
+backend regression. Measured with the same script: `api` = 0 blocking, `mobile` = 2 high (`@expo/cli`,
+`node-forge`) that only exist in the Expo dev-server toolchain.
 
-Dev-only advisories in the Vitest/Vite toolchain are the other reason audits stay production-scoped;
-upgrading to Vitest 5 is tracked separately.
+Exceptions are matched by **GHSA id, never by package name**, so a new advisory for an otherwise-accepted
+package still fails the gate. One is currently accepted: GHSA-mrhx-c7xc-m3w5 (`zod` < 4.6.6, memory
+exhaustion on oversized constrained collections) — every API schema caps collection length and the request
+body is capped at 64 KB. The real fix is zod 4, which is a breaking change for `.strict()` and issue codes.
+`body-parser` needed no exception: the root `overrides` block pins `~1.20.9`, the patched release.

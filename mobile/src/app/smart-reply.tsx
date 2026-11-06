@@ -1,17 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ResultPreview } from '../components/ResultPreview';
 import { Screen, ScreenTitle } from '../components/Screen';
 import { Button, Card, Input, SegmentedPill } from '../components/ui';
+import { useAiTarget } from '../hooks/useAiTarget';
+import { describeApiError } from '../services/errors';
 import { useAppDeps } from '../services/deps';
 import { colors, radii, spacing, typography } from '../theme';
-import type { GenerateResponseOutput, Provider, Tone } from '@ai-keyboard/shared-contracts/schemas';
+import type { GenerateResponseOutput, Tone } from '@ai-keyboard/shared-contracts/schemas';
+import { LIMITS } from '@ai-keyboard/shared-contracts/schemas';
 
 const REPLY_TONES: { id: Tone; label: string }[] = [
   { id: 'polite', label: 'Polite' },
@@ -29,10 +26,7 @@ export default function SmartReplyScreen() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateResponseOutput | null>(null);
 
-  const { data: defaultTarget } = useQuery({
-    queryKey: ['default-provider-target'],
-    queryFn: () => deps.providerKeys.getDefault(),
-  });
+  const { target, preferences } = useAiTarget();
 
   const onGenerateReply = async () => {
     if (!receivedMessage.trim()) {
@@ -40,8 +34,8 @@ export default function SmartReplyScreen() {
       return;
     }
 
-    if (!defaultTarget) {
-      setError('No AI Provider active. Set one up in Provider Settings.');
+    if (!target) {
+      setError('No active provider and model. Add a key and pick a model in Provider Settings.');
       return;
     }
 
@@ -49,19 +43,21 @@ export default function SmartReplyScreen() {
     setError(null);
     try {
       const response = await deps.api.generate({
-        provider: defaultTarget.provider as Provider,
-        model: defaultTarget.model ?? 'gpt-4o-mini',
+        provider: target.provider,
+        model: target.model,
         action: 'reply',
         text: receivedMessage.trim(),
         settings: {
           tone: selectedTone,
-          toneStrength: 'balanced',
-          formality: 'neutral',
+          toneStrength: preferences.toneStrength,
+          formality: preferences.formality,
+          length: preferences.defaultLength,
+          language: preferences.language,
         },
       });
       setResult(response);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate reply.');
+      setError(describeApiError(err, 'Failed to generate reply.'));
     } finally {
       setIsGenerating(false);
     }
@@ -95,11 +91,13 @@ export default function SmartReplyScreen() {
           <Card surface="pearl" padding="sm" style={styles.inputCard}>
             <Input
               testID="received-message-input"
+              accessibilityLabel="The message you received"
               value={receivedMessage}
               onChangeText={setReceivedMessage}
               placeholder="e.g. Can we reschedule our project sync to Thursday 2 PM?"
               multiline
               numberOfLines={4}
+              maxLength={LIMITS.maxTextChars}
               style={styles.textArea}
             />
           </Card>
@@ -108,7 +106,7 @@ export default function SmartReplyScreen() {
         <Button
           testID="generate-reply-button"
           onPress={onGenerateReply}
-          disabled={isGenerating || !defaultTarget}
+          disabled={isGenerating || !target}
           isLoading={isGenerating}
           variant="primary"
         >

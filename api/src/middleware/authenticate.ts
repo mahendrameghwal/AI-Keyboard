@@ -26,13 +26,19 @@ export async function authenticate(
     const session = await prisma.session.findUnique({ where: { id: claims.sid } });
 
     if (!session || session.userId !== claims.sub) {
-      throw new AppError(ErrorCode.SESSION_EXPIRED, 'The session has expired. Please sign in again.');
+      throw new AppError(
+        ErrorCode.SESSION_EXPIRED,
+        'The session has expired. Please sign in again.',
+      );
     }
     if (session.revokedAt) {
       throw new AppError(ErrorCode.SESSION_REVOKED, 'This session has been revoked.');
     }
     if (session.expiresAt.getTime() <= Date.now()) {
-      throw new AppError(ErrorCode.SESSION_EXPIRED, 'The session has expired. Please sign in again.');
+      throw new AppError(
+        ErrorCode.SESSION_EXPIRED,
+        'The session has expired. Please sign in again.',
+      );
     }
 
     req.user = { id: claims.sub, sessionId: claims.sid };

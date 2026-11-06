@@ -10,6 +10,12 @@ import { generateRefreshToken, hashRefreshToken, signAccessToken } from './token
 /** Grace window for racing refreshes before treating a token as reused. */
 const REFRESH_GRACE_MS = 60_000;
 
+/**
+ * Logging in with an unknown email still verifies this hash, so response time does not
+ * tell an attacker which addresses have accounts. Computed once at module load.
+ */
+const placeholderHashPromise = hashPassword(randomUUID());
+
 export interface DeviceInput {
   platform: 'android' | 'ios';
   name?: string;
@@ -91,7 +97,10 @@ export async function register(input: {
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    throw new AppError(ErrorCode.EMAIL_ALREADY_EXISTS, 'An account with this email already exists.');
+    throw new AppError(
+      ErrorCode.EMAIL_ALREADY_EXISTS,
+      'An account with this email already exists.',
+    );
   }
 
   const passwordHash = await hashPassword(input.password);
@@ -111,8 +120,10 @@ export async function login(input: {
   const email = normalizeEmail(input.email);
 
   const user = await prisma.user.findUnique({ where: { email } });
-  // Constant-ish behavior: always run a verify to reduce user enumeration.
-  const ok = user ? await verifyPassword(user.passwordHash, input.password) : false;
+  const ok = await verifyPassword(
+    user?.passwordHash ?? (await placeholderHashPromise),
+    input.password,
+  );
   if (!user || !ok || user.status !== 'active') {
     throw new AppError(ErrorCode.INVALID_CREDENTIALS, 'Invalid email or password.');
   }
@@ -200,9 +211,7 @@ export async function listSessions(userId: string, currentSessionId: string) {
     createdAt: s.createdAt.toISOString(),
     lastUsedAt: s.lastUsedAt.toISOString(),
     expiresAt: s.expiresAt.toISOString(),
-    device: s.device
-      ? { platform: s.device.platform, name: s.device.name }
-      : null,
+    device: s.device ? { platform: s.device.platform, name: s.device.name } : null,
   }));
 }
 

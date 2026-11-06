@@ -22,7 +22,8 @@ export default function AccountScreen() {
       <Screen>
         <ScreenTitle testID="account-guest-title">Account</ScreenTitle>
         <Text style={styles.intro}>
-          Accounts are optional. Your AI Keyboard is fully functional with just your provider API key.
+          Accounts are optional. Your AI Keyboard is fully functional with just your provider API
+          key.
         </Text>
         <Text style={styles.benefit}>
           Creating an account allows you to sync your writing preferences (tone, style, length)
@@ -64,16 +65,24 @@ export default function AccountScreen() {
 
       <View style={styles.menu}>
         <Link href="/sync" asChild>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            accessibilityRole="link"
+            accessibilityLabel="Cloud preference sync"
+            style={styles.menuItem}
+          >
             <View style={styles.menuContent}>
-               <Text style={styles.menuTitle}>Cloud Preference Sync</Text>
+              <Text style={styles.menuTitle}>Cloud Preference Sync</Text>
               <Text style={styles.menuSub}>Sync tone, style, and length preferences</Text>
             </View>
           </TouchableOpacity>
         </Link>
 
         <Link href="/account/sessions" asChild>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            accessibilityRole="link"
+            accessibilityLabel="Active devices and sessions"
+            style={styles.menuItem}
+          >
             <View style={styles.menuContent}>
               <Text style={styles.menuTitle}>Active Devices & Sessions</Text>
               <Text style={styles.menuSub}>Manage other devices logged into your account</Text>
@@ -141,6 +150,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.pearl,
     borderRadius: radii.lg,
     padding: spacing.card,
+    minHeight: 44,
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.border,
   },

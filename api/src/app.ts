@@ -7,12 +7,13 @@ import { requestLogger } from './middleware/requestLogger';
 import { cors } from './middleware/cors';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { errorHandler } from './middleware/errorHandler';
+import { launchJobSweep } from './workers/backgroundJobs';
 
 export function createApp(): Express {
   const app = express();
 
   app.disable('x-powered-by');
-  app.set('trust proxy', 1); // behind HTTPS ingress (SRS §22.1)
+  app.set('trust proxy', env.TRUST_PROXY); // see TRUST_PROXY in api/.env.example (SRS §22.1)
 
   app.use(helmet()); // includes HSTS, nosniff, frameguard, etc.
   app.use(cors);
@@ -21,6 +22,13 @@ export function createApp(): Express {
   app.use(requestId);
   // Allowlisted access logging only — never bodies, headers, or query strings.
   app.use(requestLogger);
+  if (env.DATABASE_URL) {
+    // Cheap due-check; the sweep itself is throttled to the job interval.
+    app.use((_req, _res, next) => {
+      launchJobSweep();
+      next();
+    });
+  }
   app.use(apiRouter);
 
   app.use(notFoundHandler);

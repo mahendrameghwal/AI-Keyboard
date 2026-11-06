@@ -12,12 +12,7 @@ export interface InputProps extends TextInputProps {
   style?: StyleProp<TextStyle>;
 }
 
-export function Input({
-  style,
-  onFocus,
-  onBlur,
-  ...props
-}: InputProps): React.JSX.Element {
+export function Input({ style, onFocus, onBlur, ...props }: InputProps): React.JSX.Element {
   const [isFocused, setIsFocused] = useState(false);
 
   return (

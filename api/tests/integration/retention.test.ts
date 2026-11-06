@@ -59,6 +59,39 @@ describe.skipIf(!hasDb)('retention + account deletion (database-backed)', () => 
     expect(remaining.map((s) => s.id)).toEqual([live.id]);
   });
 
+  it('pruneUsageEvents drops metric rows past the retention window', async () => {
+    // Five years old: older than any retention window an operator would configure.
+    const stale = new Date(Date.now() - 5 * 365 * 86_400_000);
+    const old = await prisma.usageEvent.create({
+      data: {
+        action: 'rewrite',
+        provider: 'openai',
+        model: 'gpt-4o-mini',
+        latencyMs: 100,
+        status: 'success',
+        createdAt: stale,
+      },
+    });
+    const fresh = await prisma.usageEvent.create({
+      data: {
+        action: 'rewrite',
+        provider: 'openai',
+        model: 'gpt-4o-mini',
+        latencyMs: 100,
+        status: 'success',
+      },
+    });
+
+    const { pruneUsageEvents } = await import('../../src/workers/backgroundJobs');
+    // Assert the rows, not the returned count: another suite's request-triggered sweep
+    // can prune the same stale rows first, and then this prune legitimately returns 0.
+    await pruneUsageEvents();
+
+    expect(await prisma.usageEvent.count({ where: { id: old.id } })).toBe(0);
+    expect(await prisma.usageEvent.count({ where: { id: fresh.id } })).toBe(1);
+    await prisma.usageEvent.delete({ where: { id: fresh.id } });
+  });
+
   it('purgeUser cascades sessions, devices and preferences', async () => {
     const user = await createUser('purge');
     const device = await prisma.device.create({ data: { userId: user.id, platform: 'android' } });

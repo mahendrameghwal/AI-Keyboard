@@ -12,6 +12,7 @@ import { Screen, ScreenTitle } from '../components/Screen';
 import { Button, Card, Input } from '../components/ui';
 import { ProviderSettings } from '../features/providers/settings';
 import { API_BASE_URL } from '../services/api';
+import { describeApiError } from '../services/errors';
 import { useAppDeps } from '../services/deps';
 import { colors, radii, spacing, typography } from '../theme';
 
@@ -28,7 +29,13 @@ export default function ProviderSettingsScreen() {
   const rows = useQuery({ queryKey: ['provider-rows'], queryFn: () => settings.rows() });
   const selectedRow = rows.data?.find((row) => row.provider.id === selected);
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['provider-rows'] });
+  /** Saving or removing a key changes what the writing screens show, so both caches go. */
+  const refresh = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['provider-rows'] }),
+      queryClient.invalidateQueries({ queryKey: ['default-provider-target'] }),
+    ]);
+  };
 
   const onTest = async () => {
     if (!selectedRow) return;
@@ -48,7 +55,7 @@ export default function ProviderSettingsScreen() {
       setOutcome({ ok: true, message: `Saved for ${selectedRow.provider.name}.` });
       await refresh();
     } catch (error) {
-      setOutcome({ ok: false, message: error instanceof Error ? error.message : 'Save failed.' });
+      setOutcome({ ok: false, message: describeApiError(error, 'Save failed.') });
     }
   };
 
@@ -79,11 +86,11 @@ export default function ProviderSettingsScreen() {
           <Card surface="pearl" style={styles.errorCard}>
             <Text style={styles.errorTitle}>Cannot load AI Providers</Text>
             <Text testID="providers-error" style={styles.errorMessage}>
-              {rows.error instanceof Error ? rows.error.message : 'Cannot reach backend service.'}
+              {describeApiError(rows.error, 'Cannot reach backend service.')}
             </Text>
             <Text style={styles.errorSub}>
               Target: {API_BASE_URL}
-              {'\n'}Make sure the API server is running (`npm run api:dev`) and reachable on your Wi-Fi network.
+              {'\n'}Check your internet connection, then retry.
             </Text>
             <Button size="compact" variant="destructive" onPress={refresh} style={styles.retryBtn}>
               Retry Connection
@@ -109,6 +116,9 @@ export default function ProviderSettingsScreen() {
                   >
                     <TouchableOpacity
                       testID={`provider-row-${row.provider.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${row.provider.name}, ${row.configured ? 'key stored' : 'no key stored'}`}
+                      accessibilityState={{ selected: isCurrentSelected }}
                       onPress={() => {
                         setSelected(row.provider.id);
                         setModelInput(row.provider.defaultModel);
@@ -140,6 +150,8 @@ export default function ProviderSettingsScreen() {
                     {row.configured ? (
                       <TouchableOpacity
                         testID={`provider-remove-${row.provider.id}`}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove the ${row.provider.name} key`}
                         onPress={() => onRemove(row.provider.id)}
                         style={styles.removeTouch}
                       >
@@ -166,8 +178,14 @@ export default function ProviderSettingsScreen() {
                     <TouchableOpacity
                       key={model}
                       testID={`model-${model}`}
+                      accessibilityRole="radio"
+                      accessibilityLabel={model}
+                      accessibilityState={{ selected: isActive }}
                       onPress={() => setModelInput(model)}
-                      style={[styles.modelPill, isActive ? styles.modelActive : styles.modelInactive]}
+                      style={[
+                        styles.modelPill,
+                        isActive ? styles.modelActive : styles.modelInactive,
+                      ]}
                     >
                       <Text style={[styles.modelText, isActive && styles.modelTextActive]}>
                         {model}
@@ -182,6 +200,7 @@ export default function ProviderSettingsScreen() {
               <Text style={styles.fieldLabel}>API Key</Text>
               <Input
                 testID="key-input"
+                accessibilityLabel="Provider API key"
                 value={keyInput}
                 onChangeText={setKeyInput}
                 placeholder="Provider API key"
@@ -202,10 +221,7 @@ export default function ProviderSettingsScreen() {
 
             {outcome ? (
               <View
-                style={[
-                  styles.outcomeBox,
-                  { backgroundColor: outcome.ok ? '#F0FDF4' : '#FEF2F2' },
-                ]}
+                style={[styles.outcomeBox, { backgroundColor: outcome.ok ? '#F0FDF4' : '#FEF2F2' }]}
               >
                 <Text
                   testID="test-outcome"
@@ -319,6 +335,8 @@ const styles = StyleSheet.create({
   removeTouch: {
     marginTop: 8,
     alignSelf: 'flex-start',
+    minHeight: 44,
+    justifyContent: 'center',
   },
   remove: {
     ...typography.caption,
@@ -349,6 +367,9 @@ const styles = StyleSheet.create({
   modelPill: {
     paddingHorizontal: spacing.regular,
     paddingVertical: 7,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: radii.pill,
     borderWidth: 1,
   },

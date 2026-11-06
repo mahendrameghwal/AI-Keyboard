@@ -45,7 +45,11 @@ describe.skipIf(!hasDb)('auth + sync (database-backed)', () => {
   async function registerUser(name: string) {
     const res = await request(app)
       .post('/v1/auth/register')
-      .send({ email: email(name), password: PASSWORD, device: { platform: 'android', name: 'Pixel' } });
+      .send({
+        email: email(name),
+        password: PASSWORD,
+        device: { platform: 'android', name: 'Pixel' },
+      });
     return res;
   }
 
@@ -176,9 +180,7 @@ describe.skipIf(!hasDb)('auth + sync (database-backed)', () => {
     const reg = await registerUser('delete');
     const token = reg.body.accessToken as string;
 
-    const del = await request(app)
-      .delete('/v1/users/me')
-      .set('Authorization', `Bearer ${token}`);
+    const del = await request(app).delete('/v1/users/me').set('Authorization', `Bearer ${token}`);
     expect(del.status).toBe(202);
     expect(del.body.deletion.status).toBe('pending');
 
@@ -187,5 +189,14 @@ describe.skipIf(!hasDb)('auth + sync (database-backed)', () => {
       .set('Authorization', `Bearer ${token}`);
     expect(after.status).toBe(401);
     expect(after.body.error.code).toBe('SESSION_REVOKED');
+  });
+
+  it('reports usage as disabled by default', async () => {
+    const reg = await registerUser('usage');
+    const res = await request(app)
+      .get('/v1/ai/usage')
+      .set('Authorization', `Bearer ${reg.body.accessToken as string}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ enabled: false, events: [] });
   });
 });

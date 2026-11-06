@@ -7,7 +7,11 @@ const DeviceSchema = z
   })
   .strict();
 
-const EmailSchema = z.string().email().max(254).transform((v) => v.trim().toLowerCase());
+const EmailSchema = z
+  .string()
+  .email()
+  .max(254)
+  .transform((v) => v.trim().toLowerCase());
 const PasswordSchema = z.string().min(8).max(128);
 const RefreshTokenSchema = z.string().min(1).max(512);
 

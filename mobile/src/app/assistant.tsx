@@ -1,17 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ResultPreview } from '../components/ResultPreview';
 import { Screen, ScreenTitle } from '../components/Screen';
 import { Button, Card, Input, SegmentedPill } from '../components/ui';
+import { useAiTarget } from '../hooks/useAiTarget';
+import { describeApiError } from '../services/errors';
 import { useAppDeps } from '../services/deps';
 import { colors, radii, spacing, typography } from '../theme';
-import type { Action, GenerateResponseOutput, Provider, Tone } from '@ai-keyboard/shared-contracts/schemas';
+import { LIMITS } from '@ai-keyboard/shared-contracts/schemas';
+import type { Action, GenerateResponseOutput, Tone } from '@ai-keyboard/shared-contracts/schemas';
 
 const ACTIONS: { id: Action; label: string }[] = [
   { id: 'fix', label: 'Fix Grammar' },
@@ -37,16 +34,13 @@ export default function WritingAssistantScreen() {
 
   const [text, setText] = useState('');
   const [selectedAction, setSelectedAction] = useState<Action>('rewrite');
-  const [selectedTone, setSelectedTone] = useState<Tone>('professional');
+  const [toneOverride, setToneOverride] = useState<Tone | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateResponseOutput | null>(null);
 
-  // Load configured default provider & model
-  const { data: defaultTarget } = useQuery({
-    queryKey: ['default-provider-target'],
-    queryFn: () => deps.providerKeys.getDefault(),
-  });
+  const { target, preferences } = useAiTarget();
+  const tone = toneOverride ?? preferences.writingStyle;
 
   const onGenerate = async () => {
     if (!text.trim()) {
@@ -54,8 +48,8 @@ export default function WritingAssistantScreen() {
       return;
     }
 
-    if (!defaultTarget) {
-      setError('No AI provider configured. Go to Provider Settings to add your API key.');
+    if (!target) {
+      setError('No active provider and model. Add a key and pick a model in Provider Settings.');
       return;
     }
 
@@ -63,20 +57,21 @@ export default function WritingAssistantScreen() {
     setError(null);
     try {
       const response = await deps.api.generate({
-        provider: defaultTarget.provider as Provider,
-        model: defaultTarget.model ?? 'gpt-4o-mini',
+        provider: target.provider,
+        model: target.model,
         action: selectedAction,
         text: text.trim(),
         settings: {
-          tone: selectedTone,
-          toneStrength: 'balanced',
-          formality: 'neutral',
-          length: 'normal',
+          tone,
+          toneStrength: preferences.toneStrength,
+          formality: preferences.formality,
+          length: preferences.defaultLength,
+          language: preferences.language,
         },
       });
       setResult(response);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Generation failed.');
+      setError(describeApiError(err, 'Generation failed.'));
     } finally {
       setIsGenerating(false);
     }
@@ -89,18 +84,18 @@ export default function WritingAssistantScreen() {
         Transform, rewrite, or expand your text using your active AI provider.
       </Text>
 
-      {defaultTarget ? (
+      {target ? (
         <View style={styles.providerBadge}>
           <View style={styles.providerDot} />
           <Text style={styles.providerText}>
-            Active Model: {defaultTarget.provider} / {defaultTarget.model}
+            Active Model: {target.provider} / {target.model}
           </Text>
         </View>
       ) : (
         <Card surface="pearl" style={styles.warningCard}>
           <Text style={styles.warningTitle}>No AI Provider Configured</Text>
           <Text style={styles.warningText}>
-            Add your API key in Provider Settings to enable writing assistance.
+            Add your API key and pick a model in Provider Settings to enable writing assistance.
           </Text>
         </Card>
       )}
@@ -129,8 +124,8 @@ export default function WritingAssistantScreen() {
           <Text style={styles.label}>Tone</Text>
           <SegmentedPill
             options={TONE_OPTIONS}
-            selectedId={selectedTone}
-            onSelect={setSelectedTone}
+            selectedId={tone}
+            onSelect={setToneOverride}
             scrollable
           />
         </View>
@@ -141,11 +136,13 @@ export default function WritingAssistantScreen() {
           <Card surface="pearl" padding="sm" style={styles.inputCard}>
             <Input
               testID="assistant-input-text"
+              accessibilityLabel="Text to rewrite"
               value={text}
               onChangeText={setText}
               placeholder="Type or paste your text here…"
               multiline
               numberOfLines={4}
+              maxLength={LIMITS.maxTextChars}
               style={styles.textArea}
             />
           </Card>
@@ -154,7 +151,7 @@ export default function WritingAssistantScreen() {
         <Button
           testID="assistant-generate-button"
           onPress={onGenerate}
-          disabled={isGenerating || !defaultTarget}
+          disabled={isGenerating || !target}
           isLoading={isGenerating}
           variant="primary"
         >

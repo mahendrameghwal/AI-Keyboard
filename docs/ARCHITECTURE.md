@@ -88,14 +88,23 @@ while `USAGE_TRACKING_ENABLED=false`, and never stores message text.
 
 1. `pruneExpiredSessions()` — hard-deletes session rows past `expiresAt`. Revoked-but-unexpired rows
    stay, because the refresh grace window reads them.
-2. `processDueJobs()` — claims `account_deletion_jobs` whose `scheduledFor` has passed, purges the user
+2. `pruneUsageEvents()` — deletes `usage_events` older than `USAGE_EVENT_RETENTION_DAYS` (90); nothing
+   else bounds that table.
+3. `processDueJobs()` — claims `account_deletion_jobs` whose `scheduledFor` has passed, purges the user
    (cascade removes sessions, devices, preferences and the job row itself), retries up to 5 times.
 
-Started from `server.ts` and stopped on `SIGTERM`/`SIGINT`. Single-instance assumption, like the
-in-memory rate limiter: move both to a shared store or external scheduler before scaling out.
+`launchJobSweep()` is throttled to the interval and is also called from the request pipeline, because a
+free Render instance sleeps between requests and a timer alone would never run the retention or
+deletion work. Started from `server.ts` and stopped on `SIGTERM`/`SIGINT`. Single-instance assumption,
+like the in-memory rate limiter: move both to a shared store or external scheduler before scaling out.
 
 ## Known single-instance constraints
 
 - Rate-limit counters live in process memory.
 - Background jobs would double-run under multiple replicas.
-- `JWT_SECRET` default (`change-me-in-production`) must be overridden before any deployment.
+- The free Render Postgres instance is deleted after a period of non-use, and the free web service
+  sleeps between requests: the first request after a sleep pays for a cold start (Prisma connect plus
+  a job sweep), and losing the database means losing accounts, sessions and preference sync rows.
+  Upgrade both before real users depend on them.
+- `JWT_SECRET` defaults to `change-me-in-production`; `api/src/config/env.ts` refuses to boot
+  `NODE_ENV=production` with that value or with anything shorter than 32 characters.

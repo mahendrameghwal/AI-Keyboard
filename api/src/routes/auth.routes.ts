@@ -12,7 +12,13 @@ const authLimit = rateLimit({
   max: env.RATE_LIMIT_AUTH_ATTEMPTS,
 });
 
+const sessionLimit = rateLimit({
+  scope: 'session',
+  windowSeconds: env.RATE_LIMIT_AUTH_WINDOW_SECONDS,
+  max: env.RATE_LIMIT_SESSION_ATTEMPTS,
+});
+
 authRouter.post('/v1/auth/register', authLimit, asyncHandler(register));
 authRouter.post('/v1/auth/login', authLimit, asyncHandler(login));
-authRouter.post('/v1/auth/refresh', asyncHandler(refresh));
-authRouter.post('/v1/auth/logout', asyncHandler(logout));
+authRouter.post('/v1/auth/refresh', sessionLimit, asyncHandler(refresh));
+authRouter.post('/v1/auth/logout', sessionLimit, asyncHandler(logout));

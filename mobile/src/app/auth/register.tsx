@@ -4,7 +4,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Screen, ScreenTitle } from '../../components/Screen';
 import { Button, Card, Input } from '../../components/ui';
 import { useAuth } from '../../features/auth/AuthContext';
+import { describeApiError } from '../../services/errors';
 import { colors, radii, spacing, typography } from '../../theme';
+import { LIMITS } from '@ai-keyboard/shared-contracts/schemas';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -22,8 +24,8 @@ export default function RegisterScreen() {
       return;
     }
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long.');
+    if (password.length < LIMITS.minPasswordChars) {
+      setError(`Password must be at least ${LIMITS.minPasswordChars} characters long.`);
       return;
     }
 
@@ -38,7 +40,7 @@ export default function RegisterScreen() {
       await register(email.trim(), password);
       router.replace('/account');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+      setError(describeApiError(err, 'Registration failed. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -62,6 +64,7 @@ export default function RegisterScreen() {
           <Text style={styles.label}>Email Address</Text>
           <Input
             testID="register-email"
+            accessibilityLabel="Email"
             value={email}
             onChangeText={setEmail}
             placeholder="name@example.com"
@@ -75,11 +78,13 @@ export default function RegisterScreen() {
           <Text style={styles.label}>Password (minimum 8 characters)</Text>
           <Input
             testID="register-password"
+            accessibilityLabel="Password"
             value={password}
             onChangeText={setPassword}
             placeholder="Password"
             secureTextEntry
             autoCapitalize="none"
+            maxLength={LIMITS.maxPasswordChars}
           />
         </View>
 
@@ -87,11 +92,13 @@ export default function RegisterScreen() {
           <Text style={styles.label}>Confirm Password</Text>
           <Input
             testID="register-confirm-password"
+            accessibilityLabel="Confirm password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             placeholder="Confirm Password"
             secureTextEntry
             autoCapitalize="none"
+            maxLength={LIMITS.maxPasswordChars}
           />
         </View>
 

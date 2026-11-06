@@ -11,6 +11,7 @@ import {
 import { Screen, ScreenTitle } from '../../components/Screen';
 import { Button, Card } from '../../components/ui';
 import { useAppDeps } from '../../services/deps';
+import { describeApiError } from '../../services/errors';
 import { colors, radii, spacing, typography } from '../../theme';
 
 export default function SessionsScreen() {
@@ -19,7 +20,13 @@ export default function SessionsScreen() {
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError,
+    error: loadError,
+    refetch,
+  } = useQuery({
     queryKey: ['account-sessions'],
     queryFn: () => deps.api.sessions(),
   });
@@ -31,7 +38,7 @@ export default function SessionsScreen() {
       await deps.api.revokeSession(id);
       await queryClient.invalidateQueries({ queryKey: ['account-sessions'] });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to revoke session.');
+      setError(describeApiError(err, 'Failed to revoke session.'));
     } finally {
       setRevokingId(null);
     }
@@ -55,8 +62,15 @@ export default function SessionsScreen() {
         <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
       ) : isError ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Could not load sessions.</Text>
-          <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>
+          <Text style={styles.emptyText}>
+            {describeApiError(loadError, 'Could not load sessions.')}
+          </Text>
+          <TouchableOpacity
+            onPress={() => refetch()}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading sessions"
+            style={styles.retryButton}
+          >
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -150,6 +164,9 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     padding: 8,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   retryText: {
     ...typography.bodyStrong,

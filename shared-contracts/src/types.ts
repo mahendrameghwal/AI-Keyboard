@@ -252,6 +252,7 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -400,7 +401,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Revoke session */
+        /**
+         * Revoke session
+         * @description Identified by the refresh token in the body, so no access token is required.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -455,6 +459,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                401: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -476,6 +481,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                401: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -507,6 +513,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                401: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -546,6 +553,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                401: components["responses"]["Error"];
                 404: components["responses"]["Error"];
             };
         };
@@ -580,6 +588,7 @@ export interface paths {
                         "application/json": components["schemas"]["Preferences"];
                     };
                 };
+                401: components["responses"]["Error"];
             };
         };
         /** Update synced preferences (optimistic concurrency) */
@@ -603,6 +612,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                401: components["responses"]["Error"];
                 409: components["responses"]["Error"];
             };
         };

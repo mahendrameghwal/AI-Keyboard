@@ -1,17 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ResultPreview } from '../components/ResultPreview';
 import { Screen, ScreenTitle } from '../components/Screen';
 import { Button, Card, Input } from '../components/ui';
+import { useAiTarget } from '../hooks/useAiTarget';
+import { describeApiError } from '../services/errors';
 import { useAppDeps } from '../services/deps';
 import { colors, radii, spacing, typography } from '../theme';
-import type { GenerateResponseOutput, Provider } from '@ai-keyboard/shared-contracts/schemas';
+import type { GenerateResponseOutput } from '@ai-keyboard/shared-contracts/schemas';
+import { LIMITS } from '@ai-keyboard/shared-contracts/schemas';
 
 export default function EmailGeneratorScreen() {
   const deps = useAppDeps();
@@ -22,10 +19,7 @@ export default function EmailGeneratorScreen() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateResponseOutput | null>(null);
 
-  const { data: defaultTarget } = useQuery({
-    queryKey: ['default-provider-target'],
-    queryFn: () => deps.providerKeys.getDefault(),
-  });
+  const { target, preferences } = useAiTarget();
 
   const onGenerateEmail = async () => {
     if (!notes.trim()) {
@@ -33,8 +27,8 @@ export default function EmailGeneratorScreen() {
       return;
     }
 
-    if (!defaultTarget) {
-      setError('No AI Provider active. Set one up in Provider Settings.');
+    if (!target) {
+      setError('No active provider and model. Add a key and pick a model in Provider Settings.');
       return;
     }
 
@@ -45,20 +39,27 @@ export default function EmailGeneratorScreen() {
         ? `To: ${recipientContext.trim()}\nNotes: ${notes.trim()}`
         : notes.trim();
 
+      if (combinedText.length > LIMITS.maxSummarizeTextChars) {
+        setError('That is too much text for one request. Shorten the notes or the recipient line.');
+        return;
+      }
+
       const response = await deps.api.generate({
-        provider: defaultTarget.provider as Provider,
-        model: defaultTarget.model ?? 'gpt-4o-mini',
+        provider: target.provider,
+        model: target.model,
         action: 'email',
         text: combinedText,
         settings: {
-          tone: 'professional',
-          toneStrength: 'balanced',
-          formality: 'formal',
+          tone: preferences.writingStyle,
+          toneStrength: preferences.toneStrength,
+          formality: preferences.formality,
+          length: preferences.defaultLength,
+          language: preferences.language,
         },
       });
       setResult(response);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate email.');
+      setError(describeApiError(err, 'Failed to generate email.'));
     } finally {
       setIsGenerating(false);
     }
@@ -82,9 +83,11 @@ export default function EmailGeneratorScreen() {
           <Text style={styles.label}>Recipient / Context (Optional)</Text>
           <Input
             testID="email-recipient"
+            accessibilityLabel="Who the email is for"
             value={recipientContext}
             onChangeText={setRecipientContext}
             placeholder="e.g. Hiring Manager, Client, Project Lead"
+            maxLength={LIMITS.maxTextChars}
           />
         </View>
 
@@ -93,11 +96,13 @@ export default function EmailGeneratorScreen() {
           <Card surface="pearl" padding="sm" style={styles.inputCard}>
             <Input
               testID="email-notes"
+              accessibilityLabel="Notes or points for the email"
               value={notes}
               onChangeText={setNotes}
               placeholder="e.g. Send updated design mockups, request review by Friday 5 PM, answer questions about font choices"
               multiline
               numberOfLines={4}
+              maxLength={LIMITS.maxTextChars}
               style={styles.textArea}
             />
           </Card>
@@ -106,7 +111,7 @@ export default function EmailGeneratorScreen() {
         <Button
           testID="generate-email-button"
           onPress={onGenerateEmail}
-          disabled={isGenerating || !defaultTarget}
+          disabled={isGenerating || !target}
           isLoading={isGenerating}
           variant="primary"
         >

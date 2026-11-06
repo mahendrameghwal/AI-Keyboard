@@ -36,7 +36,10 @@ describe('POST /v1/ai/generate', () => {
   });
 
   it('generates text and sets rate-limit + request-id headers', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(OPENAI_OK)));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(OPENAI_OK)),
+    );
 
     const res = await request(app)
       .post('/v1/ai/generate')
@@ -110,7 +113,10 @@ describe('POST /v1/ai/generate', () => {
   });
 
   it('maps an upstream auth failure to INVALID_PROVIDER_KEY', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({}, 401)));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({}, 401)),
+    );
     const res = await request(app)
       .post('/v1/ai/generate')
       .set('X-Provider-Key', 'bad')
@@ -120,7 +126,10 @@ describe('POST /v1/ai/generate', () => {
   });
 
   it('enforces the per-IP rate limit', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(OPENAI_OK)));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(OPENAI_OK)),
+    );
 
     const send = () =>
       request(app)
@@ -146,7 +155,10 @@ describe('provider catalog and validation', () => {
   });
 
   it('validates provider credentials', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({ data: [] })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ data: [] })),
+    );
     const res = await request(app)
       .post('/v1/ai/providers/test')
       .set('X-Provider-Key', 'sk-test')
@@ -155,9 +167,9 @@ describe('provider catalog and validation', () => {
     expect(res.body.valid).toBe(true);
   });
 
-  it('reports usage as disabled by default', async () => {
+  it('requires a session for usage', async () => {
     const res = await request(app).get('/v1/ai/usage');
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ enabled: false, events: [] });
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('UNAUTHENTICATED');
   });
 });

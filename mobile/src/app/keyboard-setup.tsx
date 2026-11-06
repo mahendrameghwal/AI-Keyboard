@@ -10,10 +10,7 @@ import { colors, spacing, typography } from '../theme';
  * module (plan T6.4); until that exists this screen must not imply any status (FR-01).
  */
 export default function KeyboardSetup() {
-  const steps =
-    Platform.OS === 'ios'
-      ? [...KEYBOARD_SETUP.android, ...KEYBOARD_SETUP.ios]
-      : [...KEYBOARD_SETUP.android];
+  const steps = Platform.OS === 'ios' ? [...KEYBOARD_SETUP.ios] : [...KEYBOARD_SETUP.android];
 
   return (
     <Screen>
@@ -26,8 +23,9 @@ export default function KeyboardSetup() {
         <InfoList items={steps} testID="keyboard-setup-steps" />
         <View style={styles.noteBox}>
           <Text style={styles.noteText}>
-            The keyboard input method itself is deployed via Phase 2; this screen lists setup
-            instructions for system keyboard settings.
+            The AI Keyboard is not installed on this device yet, so the option above may not appear
+            in your settings. This screen describes where it will appear; it does not show whether
+            the keyboard is enabled.
           </Text>
         </View>
       </Card>

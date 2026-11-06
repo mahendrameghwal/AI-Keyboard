@@ -46,4 +46,18 @@ describe('AuthStore', () => {
     expect(await store.getAccessToken()).toBeNull();
     expect(await store.getUser()).toBeNull();
   });
+
+  it('refuses to keep a session when the device has no secure storage', async () => {
+    const secrets = new MemorySecretStore();
+    secrets.available = false;
+    const store = new AuthStore(secrets, new MemoryJsonStore());
+
+    await expect(
+      store.saveSession({
+        user: { id: 'usr-123', email: 'test@example.com' },
+        accessToken: 'access-token-abc',
+        refreshToken: 'refresh-token-xyz',
+      }),
+    ).rejects.toThrow(/cannot store secrets securely/);
+  });
 });

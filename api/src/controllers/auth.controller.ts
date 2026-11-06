@@ -1,7 +1,12 @@
 import type { Request, Response } from 'express';
 import * as authService from '../services/auth/auth.service';
 import { requireUser } from '../utils/requireUser';
-import { LoginSchema, LogoutSchema, RefreshSchema, RegisterSchema } from '../validators/auth.validators';
+import {
+  LoginSchema,
+  LogoutSchema,
+  RefreshSchema,
+  RegisterSchema,
+} from '../validators/auth.validators';
 
 export async function register(req: Request, res: Response): Promise<void> {
   const body = RegisterSchema.parse(req.body);

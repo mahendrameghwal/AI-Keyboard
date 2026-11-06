@@ -28,10 +28,7 @@ export async function generate(req: Request, res: Response): Promise<void> {
 
   // Streaming is not part of the MVP (plan D8).
   if (body.options?.stream === true) {
-    throw new AppError(
-      ErrorCode.STREAM_NOT_SUPPORTED,
-      'Streaming responses are not supported.',
-    );
+    throw new AppError(ErrorCode.STREAM_NOT_SUPPORTED, 'Streaming responses are not supported.');
   }
 
   const provider = providerRegistry.get(body.provider);

@@ -1,15 +1,10 @@
 import { Router } from 'express';
 import { env } from '../config/env';
-import { optionalAuthenticate } from '../middleware/authenticate';
+import { authenticate, optionalAuthenticate } from '../middleware/authenticate';
 import { requireProviderKey } from '../middleware/providerKey';
 import { rateLimit } from '../middleware/rateLimit';
 import { asyncHandler } from '../utils/asyncHandler';
-import {
-  generate,
-  listProviders,
-  testProvider,
-  usage,
-} from '../controllers/ai.controller';
+import { generate, listProviders, testProvider, usage } from '../controllers/ai.controller';
 
 export const aiRouter = Router();
 
@@ -38,4 +33,4 @@ aiRouter.post(
   asyncHandler(testProvider),
 );
 
-aiRouter.get('/v1/ai/usage', usage);
+aiRouter.get('/v1/ai/usage', authenticate, usage);

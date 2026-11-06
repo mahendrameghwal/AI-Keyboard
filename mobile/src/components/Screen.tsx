@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View, type ViewProps } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, type ViewProps } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography } from '../theme';
 
 export interface ScreenProps extends ViewProps {
@@ -6,6 +7,8 @@ export interface ScreenProps extends ViewProps {
 }
 
 export function Screen({ children, surface = 'white', style, ...rest }: ScreenProps) {
+  const insets = useSafeAreaInsets();
+
   const getBg = () => {
     switch (surface) {
       case 'parchment':
@@ -19,9 +22,18 @@ export function Screen({ children, surface = 'white', style, ...rest }: ScreenPr
   };
 
   return (
-    <View style={[styles.screen, { backgroundColor: getBg() }, style]} {...rest}>
+    <KeyboardAvoidingView
+      style={[
+        styles.screen,
+        // The router header already clears the top inset; the home indicator is ours.
+        { backgroundColor: getBg(), paddingBottom: insets.bottom + spacing.md },
+        style,
+      ]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      {...rest}
+    >
       {children}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -36,10 +48,7 @@ export function ScreenTitle({
 }) {
   return (
     <Text
-      style={[
-        styles.title,
-        { color: onDark ? colors.textOnDark : colors.ink },
-      ]}
+      style={[styles.title, { color: onDark ? colors.textOnDark : colors.ink }]}
       testID={testID}
     >
       {children}

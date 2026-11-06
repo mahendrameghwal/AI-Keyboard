@@ -4,6 +4,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Screen, ScreenTitle } from '../../components/Screen';
 import { Button, Card, Input } from '../../components/ui';
 import { useAuth } from '../../features/auth/AuthContext';
+import { describeApiError } from '../../services/errors';
+import { LIMITS } from '@ai-keyboard/shared-contracts/schemas';
 import { colors, radii, spacing, typography } from '../../theme';
 
 export default function LoginScreen() {
@@ -27,7 +29,7 @@ export default function LoginScreen() {
       await login(email.trim(), password);
       router.replace('/account');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please check credentials.');
+      setError(describeApiError(err, 'Login failed. Please check credentials.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -51,6 +53,7 @@ export default function LoginScreen() {
           <Text style={styles.label}>Email Address</Text>
           <Input
             testID="login-email"
+            accessibilityLabel="Email"
             value={email}
             onChangeText={setEmail}
             placeholder="name@example.com"
@@ -64,11 +67,13 @@ export default function LoginScreen() {
           <Text style={styles.label}>Password</Text>
           <Input
             testID="login-password"
+            accessibilityLabel="Password"
             value={password}
             onChangeText={setPassword}
             placeholder="Password"
             secureTextEntry
             autoCapitalize="none"
+            maxLength={LIMITS.maxPasswordChars}
           />
         </View>
 

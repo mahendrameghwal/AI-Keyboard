@@ -22,10 +22,15 @@ export function BackendHealthBanner(): React.JSX.Element | null {
       <View style={styles.textContainer}>
         <Text style={styles.title}>Backend API Offline</Text>
         <Text style={styles.message}>
-          Cannot reach {API_BASE_URL}. Ensure your API server is running (`npm run api:dev`).
+          Cannot reach {API_BASE_URL}. Check your connection, then retry.
         </Text>
       </View>
-      <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>
+      <TouchableOpacity
+        onPress={() => refetch()}
+        accessibilityRole="button"
+        accessibilityLabel="Retry the connection check"
+        style={styles.retryButton}
+      >
         <Text style={styles.retryText}>Retry</Text>
       </TouchableOpacity>
     </View>
@@ -50,6 +55,9 @@ const styles = StyleSheet.create({
   retryButton: {
     paddingHorizontal: 10,
     paddingVertical: 6,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 6,
     backgroundColor: '#fef3c7',
   },

@@ -22,43 +22,46 @@ export async function purgeUser(userId: string): Promise<PurgeResult> {
   const prisma = requirePrisma();
   const now = new Date();
 
-  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const user = await tx.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      // Idempotent: user already purged.
+  return prisma.$transaction(
+    async (tx: Prisma.TransactionClient) => {
+      const user = await tx.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        // Idempotent: user already purged.
+        return {
+          userDeleted: true,
+          sessionsDeleted: 0,
+          devicesDeleted: 0,
+          preferencesDeleted: false,
+          jobsDeleted: 0,
+          usageEventsOrphaned: 0,
+        };
+      }
+
+      const [sessions, devices, prefs, jobs] = await Promise.all([
+        tx.session.count({ where: { userId } }),
+        tx.device.count({ where: { userId } }),
+        tx.userPreference.count({ where: { userId } }),
+        tx.accountDeletionJob.count({ where: { userId } }),
+      ]);
+
+      await tx.user.delete({ where: { id: userId } });
+
+      const orphaned = await tx.usageEvent.count({
+        where: { userId: null, createdAt: { lte: now } },
+      });
+
       return {
         userDeleted: true,
-        sessionsDeleted: 0,
-        devicesDeleted: 0,
-        preferencesDeleted: false,
-        jobsDeleted: 0,
-        usageEventsOrphaned: 0,
+        sessionsDeleted: sessions,
+        devicesDeleted: devices,
+        preferencesDeleted: prefs > 0,
+        jobsDeleted: jobs,
+        usageEventsOrphaned: orphaned,
       };
-    }
-
-    const [sessions, devices, prefs, jobs] = await Promise.all([
-      tx.session.count({ where: { userId } }),
-      tx.device.count({ where: { userId } }),
-      tx.userPreference.count({ where: { userId } }),
-      tx.accountDeletionJob.count({ where: { userId } }),
-    ]);
-
-    await tx.user.delete({ where: { id: userId } });
-
-    const orphaned = await tx.usageEvent.count({
-      where: { userId: null, createdAt: { lte: now } },
-    });
-
-    return {
-      userDeleted: true,
-      sessionsDeleted: sessions,
-      devicesDeleted: devices,
-      preferencesDeleted: prefs > 0,
-      jobsDeleted: jobs,
-      usageEventsOrphaned: orphaned,
-    };
-  }, {
-    timeout: 20000,
-    maxWait: 10000,
-  });
+    },
+    {
+      timeout: 20000,
+      maxWait: 10000,
+    },
+  );
 }

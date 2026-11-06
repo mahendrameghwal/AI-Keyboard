@@ -70,4 +70,20 @@ describe('OpenAPI contract', () => {
       res.body.error.message === 'The requested resource was not found.';
     expect(unrouted).toBe(false);
   });
+
+  // The spec's default `security: bearerAuth` must match the routes that actually
+  // run `authenticate`, or the documented 401 is a lie.
+  const BEARER_OPS = EXPECTED_OPS.filter(
+    (op) => !/(\/health|\/auth\/|\/ai\/generate|\/ai\/providers)/.test(op.split(' ')[1] ?? ''),
+  );
+
+  it.each(BEARER_OPS)('%s answers 401 without an access token', async (op) => {
+    const [method, template] = op.split(' ');
+    const path = template.replace(/\{[^}]+\}/, PARAM_VALUE);
+    const call = request(app)[method.toLowerCase() as 'get'](path);
+    const res = method === 'POST' || method === 'PUT' ? await call.send({}) : await call;
+
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('UNAUTHENTICATED');
+  });
 });

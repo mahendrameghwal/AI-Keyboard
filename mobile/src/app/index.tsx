@@ -41,17 +41,28 @@ export default function HomeScreen() {
           <Text style={styles.sectionHeader}>AI Writing Tools</Text>
 
           <Link href="/assistant" asChild>
-            <Card surface="white" style={styles.featureCard}>
+            <Card
+              surface="white"
+              accessibilityRole="link"
+              accessibilityLabel="Writing assistant"
+              style={styles.featureCard}
+            >
               <Text style={styles.cardEyebrow}>Writing Assistant</Text>
               <Text style={styles.cardTitle}>Rewrite, Fix & Expand</Text>
               <Text style={styles.cardDesc}>
-                Fix grammar, refine tone from diplomatic to assertive, or summarize text with one tap.
+                Fix grammar, refine tone from diplomatic to assertive, or summarize text with one
+                tap.
               </Text>
             </Card>
           </Link>
 
           <Link href="/email" asChild>
-            <Card surface="white" style={styles.featureCard}>
+            <Card
+              surface="white"
+              accessibilityRole="link"
+              accessibilityLabel="Email generator"
+              style={styles.featureCard}
+            >
               <Text style={styles.cardEyebrow}>Email Generator</Text>
               <Text style={styles.cardTitle}>Full Email Drafting</Text>
               <Text style={styles.cardDesc}>
@@ -61,7 +72,12 @@ export default function HomeScreen() {
           </Link>
 
           <Link href="/smart-reply" asChild>
-            <Card surface="white" style={styles.featureCard}>
+            <Card
+              surface="white"
+              accessibilityRole="link"
+              accessibilityLabel="Smart replies"
+              style={styles.featureCard}
+            >
               <Text style={styles.cardEyebrow}>Smart Replies</Text>
               <Text style={styles.cardTitle}>Context-Aware Responses</Text>
               <Text style={styles.cardDesc}>
@@ -78,10 +94,14 @@ export default function HomeScreen() {
 
           <View style={styles.darkCardGrid}>
             <Link href="/providers" asChild>
-              <Card surface="dark1" bordered={false} style={styles.darkCard}>
-                <Text style={styles.darkLinkText}>
-                  AI Provider Settings →
-                </Text>
+              <Card
+                surface="dark1"
+                bordered={false}
+                accessibilityRole="link"
+                accessibilityLabel="AI provider settings"
+                style={styles.darkCard}
+              >
+                <Text style={styles.darkLinkText}>AI Provider Settings →</Text>
                 <Text style={styles.darkCardDesc}>
                   Configure your OpenAI, Gemini, or Anthropic API key with zero server storage.
                 </Text>
@@ -89,7 +109,13 @@ export default function HomeScreen() {
             </Link>
 
             <Link href="/sync" asChild>
-              <Card surface="dark1" bordered={false} style={styles.darkCard}>
+              <Card
+                surface="dark1"
+                bordered={false}
+                accessibilityRole="link"
+                accessibilityLabel="Writing preferences and sync"
+                style={styles.darkCard}
+              >
                 <Text style={styles.darkLinkText}>Writing Preferences & Sync →</Text>
                 <Text style={styles.darkCardDesc}>
                   Set default tone and length across all your phones and tablets.
@@ -98,19 +124,31 @@ export default function HomeScreen() {
             </Link>
 
             <Link href="/account" asChild>
-              <Card surface="dark1" bordered={false} style={styles.darkCard}>
+              <Card
+                surface="dark1"
+                bordered={false}
+                accessibilityRole="link"
+                accessibilityLabel="Account and device sessions"
+                style={styles.darkCard}
+              >
                 <Text style={styles.darkLinkText}>Account & Device Sessions →</Text>
                 <Text style={styles.darkCardDesc}>
-                  {user ? 'Manage active sessions or sign out.' : 'Optional sign-in for cross-device sync.'}
+                  {user
+                    ? 'Manage active sessions or sign out.'
+                    : 'Optional sign-in for cross-device sync.'}
                 </Text>
               </Card>
             </Link>
 
             <Link href="/keyboard-setup" asChild>
-              <Card surface="dark1" bordered={false} style={styles.darkCard}>
-                <Text style={styles.darkLinkText}>
-                  Keyboard Setup Guide →
-                </Text>
+              <Card
+                surface="dark1"
+                bordered={false}
+                accessibilityRole="link"
+                accessibilityLabel="Keyboard setup guide"
+                style={styles.darkCard}
+              >
+                <Text style={styles.darkLinkText}>Keyboard Setup Guide →</Text>
                 <Text style={styles.darkCardDesc}>
                   Instructions to activate and select AI Keyboard in system settings.
                 </Text>
@@ -130,7 +168,7 @@ export default function HomeScreen() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Link href="/privacy" style={styles.footerLink}>
+          <Link href="/privacy" style={styles.footerLink} accessibilityRole="link">
             Privacy Policy & Security
           </Link>
           <Text testID="api-target" style={styles.footerText}>

@@ -27,11 +27,11 @@ use that client rather than hand-rolling fetch.
 | POST   | `/v1/ai/generate`           | `X-Provider-Key` (+ optional Bearer) | Text generation/transform. Rate tier depends on the access token.                                 |
 | GET    | `/v1/ai/providers`          | none                                 | Server-maintained model catalog (see below).                                                      |
 | POST   | `/v1/ai/providers/test`     | `X-Provider-Key`                     | Validates a provider key without generating. 10/h/IP.                                             |
-| GET    | `/v1/ai/usage`              | optional                             | `{ enabled: false, events: [] }` while usage tracking is off (plan D11).                          |
+| GET    | `/v1/ai/usage`              | Bearer                               | `{ enabled: false, events: [] }` while usage tracking is off (plan D11).                          |
 | POST   | `/v1/auth/register`         | none                                 | Returns `user`, `accessToken`, `refreshToken`, `accessTokenExpiresIn`.                            |
 | POST   | `/v1/auth/login`            | none                                 | Same payload as register.                                                                         |
 | POST   | `/v1/auth/refresh`          | refresh token body                   | Rotates the pair; reuse revokes the whole token family.                                           |
-| POST   | `/v1/auth/logout`           | Bearer                               | Revokes the current session.                                                                      |
+| POST   | `/v1/auth/logout`           | refresh token body                   | Revokes the current session.                                                                      |
 | GET    | `/v1/users/me`              | Bearer                               | Profile.                                                                                          |
 | DELETE | `/v1/users/me`              | Bearer                               | Schedules deletion (`scheduledFor` = +30 d) and revokes all sessions immediately.                 |
 | GET    | `/v1/users/me/sessions`     | Bearer                               | Live sessions with device info.                                                                   |
@@ -118,9 +118,10 @@ style/tone/formality/length/language settings and the caller's custom instructio
 Per-IP fixed window, in-process (`api/src/middleware/rateLimit.ts`), which assumes a single backend
 instance. All responses carry `X-RateLimit-Limit`, `-Remaining`, `-Reset`; rejections add `Retry-After`.
 
-| Scope                          | Default    |
-| ------------------------------ | ---------- |
-| `generate`, anonymous          | 30 / hour  |
-| `generate`, valid access token | 120 / hour |
-| `providers/test`               | 10 / hour  |
-| auth register/login            | 5 / minute |
+| Scope                          | Default     |
+| ------------------------------ | ----------- |
+| `generate`, anonymous          | 30 / hour   |
+| `generate`, valid access token | 120 / hour  |
+| `providers/test`               | 10 / hour   |
+| auth register/login            | 5 / minute  |
+| auth refresh/logout            | 60 / minute |

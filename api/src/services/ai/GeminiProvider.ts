@@ -46,15 +46,18 @@ export class GeminiProvider implements AIProvider {
 
     let res: Response;
     try {
-      res = await this.fetchImpl(`${BASE_URL}/models/${encodeURIComponent(request.model)}:generateContent`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-goog-api-key': apiKey,
+      res = await this.fetchImpl(
+        `${BASE_URL}/models/${encodeURIComponent(request.model)}:generateContent`,
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-goog-api-key': apiKey,
+          },
+          body: JSON.stringify(body),
+          signal: withTimeout(request.signal, env.PROVIDER_TIMEOUT_MS),
         },
-        body: JSON.stringify(body),
-        signal: withTimeout(request.signal, env.PROVIDER_TIMEOUT_MS),
-      });
+      );
     } catch (err) {
       throw mapAbortError(err, this.displayName);
     }

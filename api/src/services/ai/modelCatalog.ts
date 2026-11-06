@@ -136,8 +136,8 @@ export function defaultModelFor(providerId: string): string | undefined {
   const provider = current().providers.find((p) => p.id === providerId);
   if (!provider) return undefined;
   const models = new Map(provider.models.map((m) => [m.id, m.status]));
-  const preferred = [provider.defaultModel, provider.fallbackModel].filter(
-    (id): id is string => Boolean(id),
+  const preferred = [provider.defaultModel, provider.fallbackModel].filter((id): id is string =>
+    Boolean(id),
   );
   return preferred.find((id) => models.get(id) === 'active') ?? provider.defaultModel;
 }
