@@ -27,8 +27,12 @@ docker compose up -d db
 npm run api:dev                      # http://localhost:3000 — GET /health
 ```
 
-First database schema: `npx prisma migrate dev` from `api/` (migrations are checked into
+First database schema: `npm run prisma:migrate -w api` (migrations are checked into
 `api/prisma/migrations`). After pulling someone else's migration, use `npm run prisma:deploy -w api`.
+Never `npx prisma …`: if the pinned devDependency is not installed, npx quietly downloads Prisma's
+`latest` tag (today a v8 RC whose CLI has no `generate` command) instead of failing. The root
+[.npmrc](../.npmrc) forces dev dependencies into `NODE_ENV=production` installs, which is how Render
+builds; `render.yaml` still passes `--include=dev` for the same reason.
 
 A local Postgres is optional, not assumed: this host develops against **hosted Prisma Postgres**
 (`pooled.db.prisma.io`, connection string only in git-ignored `api/.env`), `docker-compose.yml` exists for
