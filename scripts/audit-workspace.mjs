@@ -6,11 +6,13 @@
  * toolchain (`expo` pulls its dev server into "dependencies"), never in the deployed
  * backend. Name-based intersection is deliberately conservative — a hoisted package
  * that also appears in the audited tree is counted, so the gate can over-report but
- * cannot miss an advisory that really reaches the backend.
+ * cannot miss an advisory that really reaches the backend. Dev-only names are then
+ * removed using the lockfile, which is the only place that labels them correctly.
  *
  * Usage: node scripts/audit-workspace.mjs --workspace api [--fail-on high] [--report-only]
  */
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 
 const SEVERITY_RANK = { low: 0, moderate: 1, high: 2, critical: 3 };
 
@@ -61,6 +63,27 @@ function productionPackageNames(workspace) {
   return names;
 }
 
+/**
+ * Names the lockfile marks dev-only in every install path. `npm ls --omit=dev` does not omit a
+ * *workspace's* devDependencies, so test tooling (vitest -> vite -> tinypool) leaks into the tree
+ * it reports. A name is dropped only when no install path of it is production, so anything that
+ * really reaches the deployed backend stays in scope. The flag errs the other way: a hoisted copy
+ * shared by dev and production parents is labelled production, so dev tooling can still block.
+ */
+function devOnlyPackageNames() {
+  const lock = JSON.parse(readFileSync(new URL('../package-lock.json', import.meta.url), 'utf8'));
+  const seen = new Set();
+  const production = new Set();
+  for (const [key, entry] of Object.entries(lock.packages ?? {})) {
+    const at = key.lastIndexOf('node_modules/');
+    if (at < 0) continue;
+    const name = key.slice(at + 'node_modules/'.length);
+    seen.add(name);
+    if (!entry.dev) production.add(name);
+  }
+  return new Set([...seen].filter((name) => !production.has(name)));
+}
+
 const args = parseArgs(process.argv.slice(2));
 const audit = runJson(['audit', '--omit=dev', '--json']);
 const thresholds = Object.entries(SEVERITY_RANK).filter(
@@ -104,6 +127,7 @@ function advisoryIds(vulnerability) {
 }
 
 const inTree = productionPackageNames(args.workspace);
+for (const name of devOnlyPackageNames()) inTree.delete(name);
 const treeHits = all.filter((v) => inTree.has(v.name));
 const accepted = [];
 const hits = [];

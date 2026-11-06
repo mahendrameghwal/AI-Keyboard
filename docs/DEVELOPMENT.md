@@ -233,6 +233,12 @@ a runtime dependency, so those advisories can never be cleared from our side —
 backend regression. Measured with the same script: `api` = 0 blocking, `mobile` = 2 high (`@expo/cli`,
 `node-forge`) that only exist in the Expo dev-server toolchain.
 
+Because `npm ls --omit=dev` does **not** omit a workspace's own devDependencies, the script also drops
+any package the lockfile marks dev-only on every install path; without that, `vitest` → `vite` →
+`tinypool` advisories blocked the backend gate even though no test tool ships in the deployed image.
+Those three are real and still open — tracked as "upgrade to Vitest 5" — they are simply out of scope
+for a production-tree gate.
+
 Exceptions are matched by **GHSA id, never by package name**, so a new advisory for an otherwise-accepted
 package still fails the gate. One is currently accepted: GHSA-mrhx-c7xc-m3w5 (`zod` < 4.6.6, memory
 exhaustion on oversized constrained collections) — every API schema caps collection length and the request
